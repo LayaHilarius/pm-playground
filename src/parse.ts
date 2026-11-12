@@ -55,6 +55,7 @@ export interface Chart {
 
 export interface Section {
   title: string
+  note: string // text after the heading: "Chain (people × cups)" -> "people × cups"
   kind: SectionKind
   points: Point[]
   tree: TreeNode[]
@@ -102,12 +103,27 @@ export function normalize(text: string): string {
   return text.toLowerCase().replace(/[:#]/g, '').trim()
 }
 
-function headingTitle(line: string, stepNames: string[]): string | null {
-  if (line.startsWith('#')) return line.replace(/^#+/, '').trim()
-  if (line.endsWith(':') && !line.startsWith('-')) return line.slice(0, -1).trim()
-  const key = normalize(line)
-  if (KNOWN_HEADINGS.includes(key) || stepNames.includes(key)) return line
+function isHeadingWord(text: string, stepNames: string[]): boolean {
+  const key = normalize(text)
+  return KNOWN_HEADINGS.includes(key) || stepNames.includes(key)
+}
+
+// A heading can carry a note after it: "Chain (people × cups a day)" or "Chain: people × cups".
+const HEADING_WITH_NOTE = /^(.+?)\s*(?:\((.*)\)|:\s*(.+))\s*$/
+
+function headingParts(line: string, stepNames: string[]): { title: string; note: string } | null {
+  if (line.startsWith('#')) return { title: line.replace(/^#+/, '').trim(), note: '' }
+  if (line.endsWith(':') && !line.startsWith('-')) return { title: line.slice(0, -1).trim(), note: '' }
+  if (isHeadingWord(line, stepNames)) return { title: line, note: '' }
+  const withNote = HEADING_WITH_NOTE.exec(line)
+  if (withNote && isHeadingWord(withNote[1], stepNames)) {
+    return { title: withNote[1].trim(), note: (withNote[2] ?? withNote[3] ?? '').trim() }
+  }
   return null
+}
+
+function headingTitle(line: string, stepNames: string[]): string | null {
+  return headingParts(line, stepNames)?.title ?? null
 }
 
 function kindOf(title: string): SectionKind {
@@ -247,7 +263,7 @@ function parseSections(notes: string): Section[] {
     if (marker) {
       const type = marker[1].toLowerCase() as ChartType
       if (current === null) {
-        current = { title: 'Notes', kind: 'list', points: [], tree: [], charts: [], ended: false }
+        current = { title: 'Notes', note: '', kind: 'list', points: [], tree: [], charts: [], ended: false }
         sections.push(current)
       }
       openChart = { type, items: [], rows: [] }
@@ -286,9 +302,11 @@ function parseSections(notes: string): Section[] {
     // Inside Chain, an indented line is always a box, even if it is called "Segment".
     const indent = indentOf(rawLine)
     const inChain: boolean = current !== null && current.kind === 'chain' && !current.ended
-    const title: string | null = inChain && indent > 0 ? null : headingTitle(line, stepNames)
-    if (title !== null) {
-      current = { title: capitalize(title), kind: kindOf(title), points: [], tree: [], charts: [], ended: false }
+    const heading: { title: string; note: string } | null = inChain && indent > 0 ? null : headingParts(line, stepNames)
+    if (heading !== null) {
+      const title: string = heading.title
+      const note: string = heading.note
+      current = { title: capitalize(title), note, kind: kindOf(title), points: [], tree: [], charts: [], ended: false }
       sections.push(current)
       treeStack = []
       continue
@@ -299,9 +317,10 @@ function parseSections(notes: string): Section[] {
       continue
     }
 
-    // Text typed before any heading still shows up.
-    if (current === null) {
-      current = { title: 'Notes', kind: 'list', points: [], tree: [], charts: [], ended: false }
+    // Text typed before any heading still shows up. So does text after a closed Structure,
+    // without turning into extra steps.
+    if (current === null || (current.kind === 'structure' && current.ended)) {
+      current = { title: 'Notes', note: '', kind: 'list', points: [], tree: [], charts: [], ended: false }
       sections.push(current)
     }
 

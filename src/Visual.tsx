@@ -56,22 +56,30 @@ function ClarifyList({ section }: { section: Section }) {
 
 // One line that says what a closed section holds.
 function summaryOf(section: Section): string {
+  const parts: string[] = []
   if (section.kind === 'clarify') {
     const answers = section.points.flatMap((p) => p.answers)
-    return answers.length > 0 ? answers.join(' · ') : 'No answers yet'
+    parts.push(answers.length > 0 ? answers.join(' · ') : 'No answers yet')
+  } else if (section.kind === 'chain') {
+    // Folded Chain shows its formula: from "Chain (formula)" or the top box's "F:" line.
+    if (section.note) parts.push(section.note)
+    for (const root of section.tree) {
+      if (root.formula) parts.push(`${root.text} = ${root.formula}${root.value ? ` (${root.value})` : ''}`)
+      else if (root.value) parts.push(`${root.text} ${root.value}`)
+      else if (!section.note && root.children.length > 0)
+        parts.push(`${root.text}: ${root.children.map((c) => c.text).join(' + ')}`)
+      else if (!section.note) parts.push(root.text)
+    }
+  } else {
+    if (section.note) parts.push(section.note)
+    parts.push(...section.points.map((p) => p.text))
   }
-  if (section.kind === 'chain') {
-    return section.tree
-      .map((root) => {
-        // Folded Chain shows its formula: "Paint cans per year = homes + apartments + …"
-        if (root.formula) return `${root.text} = ${root.formula}${root.value ? ` (${root.value})` : ''}`
-        if (root.value) return `${root.text} ${root.value}`
-        if (root.children.length > 0) return `${root.text}: ${root.children.map((c) => c.text).join(' + ')}`
-        return root.text
-      })
-      .join(' · ')
+  // Charts add their items: "Blue collar 30% · White collar 40%"
+  for (const chart of section.charts) {
+    if (chart.type === 'table') parts.push(chart.rows.slice(1).map((r) => r[0]).join(' · '))
+    else parts.push(chart.items.map((i) => `${i.label} ${i.shown}`.trim()).join(' · '))
   }
-  return section.points.map((p) => p.text).join(' · ')
+  return parts.filter(Boolean).join(' · ')
 }
 
 // What a section looks like while I'm typing in it (or after I unfold it).
@@ -129,6 +137,7 @@ function SectionView({ section, showMaths }: { section: Section; showMaths: bool
   return (
     <section className="section">
       <h2>{section.title}</h2>
+      {section.note && <p className="section-note">{section.note}</p>}
       <SectionBody section={section} showMaths={showMaths} />
     </section>
   )

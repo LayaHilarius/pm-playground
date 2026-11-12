@@ -438,3 +438,4 @@ mark.answer {
 .notes-table td { padding: 10px 14px; text-align: left; border-bottom: 1px solid var(--border); }
 .notes-table th { background: #f1f3f6; font-weight: 700; }
 .notes-table tr:last-child td { border-bottom: 0; }
+.section-note { margin: -6px 0 14px; color: var(--muted); font: 14px ui-monospace, Menlo, monospace; }
