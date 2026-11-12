@@ -17,7 +17,7 @@ export default function App() {
   useEffect(() => saveQuestions(questions), [questions])
 
   const active = questions.find((q) => q.id === activeId) ?? null
-  const sections = useMemo(() => parseNotes(active?.notes ?? ''), [active?.notes])
+  const { sections, steps } = useMemo(() => parseNotes(active?.notes ?? ''), [active?.notes])
 
   function createQuestion(title: string, type: string) {
     const question: Question = {
@@ -105,18 +105,18 @@ export default function App() {
               <textarea
                 value={active.notes}
                 onChange={(e) => updateNotes(e.target.value)}
-                placeholder={'Clarify\nIs this new cars only?\n-( Yes, new cars only'}
+                placeholder={'Clarify\nIs this new cars only?\n-( Yes, new cars only\n--end--'}
                 spellCheck={false}
                 autoFocus
               />
               <p className="notes-help">
-                <b>Clarify</b> or <b>Structure</b> on its own line starts a section · <b>-(</b> answer in bold ·
-                indented <b>-</b> hidden detail
+                <b>Clarify</b> starts a section · <b>-(</b> answer · <b>--end--</b> closes it ·{' '}
+                <b>Structure</b> then one step per line, closed with <b>--end--</b>, makes the step bar
               </p>
             </section>
           )}
 
-          <Visual sections={sections} />
+          <Visual sections={sections} steps={steps} />
         </main>
       )}
       {dialog}

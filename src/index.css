@@ -138,7 +138,6 @@ button { font: inherit; cursor: pointer; }
 .visual-empty pre { font-size: 14px; color: var(--faint); }
 .section h2 { margin: 0 0 12px; font-size: 22px; letter-spacing: -0.01em; }
 
-.qa-grid,
 .point-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px; }
 
 .card {
@@ -158,41 +157,93 @@ button { font: inherit; cursor: pointer; }
 }
 button.card:hover { border-color: #b8c4dc; }
 .card.open { border-color: var(--accent); }
-.card-label { font-size: 12px; font-weight: 700; color: var(--accent); }
 .card-text.clamp {
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
-.card-answer { font-weight: 700; color: var(--answer); }
 .card-details { margin: 4px 0 0; padding-left: 18px; color: var(--muted); }
 .card-more { font-size: 12px; font-weight: 600; color: var(--accent); }
 
-/* Structure: numbered stages joined by a line */
-.stages { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0; }
-.stage { position: relative; display: flex; gap: 14px; align-items: flex-start; padding-bottom: 14px; }
-.stage::before {
-  content: '';
-  position: absolute;
-  left: 17px;
-  top: 36px;
-  bottom: 0;
-  width: 2px;
-  background: #c9d3e6;
+/* Step bar: my Structure list, on top of the visual */
+.step-bar {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  padding: 10px 0;
+  background: var(--bg);
 }
-.stage:last-child::before { display: none; }
-.stage-number {
-  flex: none;
-  width: 36px;
-  height: 36px;
+.step-bar ol { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 8px; }
+.step {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px 8px 8px;
+  border-radius: 99px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--faint);
+  font-size: 14px;
+  font-weight: 500;
+}
+.step-icon {
+  width: 24px;
+  height: 24px;
   display: grid;
   place-items: center;
   border-radius: 50%;
-  background: var(--accent);
-  color: #fff;
+  background: #eceef2;
+  font-size: 12px;
   font-weight: 700;
 }
+.step.done { background: var(--done-soft); border-color: transparent; color: #0f5a3d; font-weight: 600; }
+.step.done .step-icon { background: #0f7a52; color: #fff; }
+.step.current { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; }
+.step.current .step-icon { background: #fff; color: var(--accent); font-size: 10px; }
+
+/* Clarify while typing: bullets, answers highlighted */
+.clarify-list { margin: 0; padding-left: 22px; display: flex; flex-direction: column; gap: 10px; font-size: 16px; line-height: 1.5; }
+.clarify-list li > span { display: block; }
+.clarify-list li > mark { display: inline-block; margin-top: 4px; }
+.clarify-list li::marker { color: var(--faint); }
+mark.answer {
+  padding: 2px 8px;
+  border-radius: 6px;
+  background: #fff1c2;
+  color: var(--answer);
+  font-weight: 700;
+}
+
+/* Clarify after --end--: one card of answers */
+.summary-card {
+  display: flex;
+  gap: 16px;
+  align-items: baseline;
+  width: 100%;
+  padding: 14px 18px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+  color: var(--text);
+  text-align: left;
+  font-size: 15px;
+  line-height: 1.5;
+}
+.summary-card:hover { border-color: #b8c4dc; }
+.summary-card.open { flex-direction: column; border-color: var(--accent); }
+.summary-title { display: flex; align-items: center; gap: 8px; flex: none; min-width: 110px; font-weight: 700; color: #0f5a3d; }
+.tick {
+  width: 20px;
+  height: 20px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: #0f7a52;
+  color: #fff;
+  font-size: 11px;
+}
+.summary-answers { font-weight: 600; }
 
 /* New question dialog */
 .dialog {

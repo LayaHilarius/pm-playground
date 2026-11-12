@@ -6,23 +6,37 @@ One tab per interview question. Built with React and TypeScript, one question ty
 
 ## How I write notes
 
+Guesstimate steps, "two Cs, four Ss": **Clarify, Chain, Segment, Solve, Sanity check, Summary.**
+
 ```
 Clarify
-Is this new cars only?
+New cars only, or used too?
 -( New cars only
+--end--
 
 Structure
-Indian households, about 30 crore
-  - 1.4 billion people / about 4.5 per household
-Split by income: rich, middle, low
+Clarify
+Chain
+Segment
+Solve
+Sanity check
+Summary
+--end--
+
+Chain
+...
 ```
 
 | I type | It shows |
 | --- | --- |
-| `Clarify`, `Structure`, `Assumptions`, `Calculation`, `Sanity check`, `Summary` on their own line, or any line starting with `#` or ending with `:` | A new section |
-| A plain line (or `- ...`) | A point. Under Clarify, a question card. Under Structure, a numbered stage |
-| `-( answer` | The answer to the point above, in bold |
-| An indented `- detail` (or `-- detail`) | A detail, hidden until I click the card |
+| `Clarify` on its own line | My questions as bullets |
+| `-( answer` | The answer to the question above, highlighted |
+| `--end--` | Closes the section. Clarify folds into one card of answers only (click to open it again) |
+| `Structure`, then one step per line, then `--end--` | The step bar on top: ✓ done, ● the step I'm on, numbers for the rest |
+| A step's name on its own line | Opens that step and moves the bar along |
+| An indented `- detail` | A detail, hidden until I click the card |
+
+Next: a visual for each step, starting with Chain.
 
 Everything is saved in my browser. Nothing leaves my laptop.
 
