@@ -315,8 +315,13 @@ mark.answer {
 .calc-error { font-size: 13px; color: #b42318; }
 .calc-history { margin: 0; padding: 6px 0 0; list-style: none; border-top: 1px solid var(--border); font: 12px ui-monospace, Menlo, monospace; color: var(--faint); }
 
-.tree-scroll { overflow-x: auto; padding: 12px 0 4px; }
-.tree, .tree ul { display: flex; justify-content: center; margin: 0; padding: 0; }
+.trees { display: flex; flex-direction: column; gap: 28px; }
+.tree-scroll { overflow-x: auto; padding: 12px 0 8px; border-bottom: 1px dashed var(--border); }
+.tree-scroll:last-child { border-bottom: 0; }
+/* max-content + auto margins: centred when it fits, scrolls from the left edge when it doesn't */
+.tree { width: max-content; margin: 0 auto; }
+.tree, .tree ul { display: flex; padding: 0; }
+.tree ul { margin: 0; }
 .tree ul { position: relative; padding-top: 22px; }
 .tree li {
   position: relative;
@@ -374,16 +379,5 @@ mark.answer {
   gap: 2px;
   text-align: center;
 }
-button.tree-box:hover { border-color: var(--accent); }
-.tree-box.editing { border: 2px solid var(--accent); }
 .tree-name { font-size: 14px; font-weight: 600; }
 .tree-value { font-size: 20px; font-weight: 700; color: var(--accent); }
-.tree-empty { font-size: 12px; color: var(--faint); }
-.tree-input {
-  width: 110px;
-  padding: 4px 6px;
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  font: 600 16px Inter, system-ui, sans-serif;
-  text-align: center;
-}

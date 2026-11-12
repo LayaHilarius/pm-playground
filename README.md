@@ -35,6 +35,7 @@ Chain
 | `Structure`, then one step per line, then `--end--` | The step bar on top: ✓ done, ● the step I'm on, numbers for the rest |
 | A step's name on its own line | Opens that step and moves the bar along |
 | An indented `- detail` | A detail, hidden until I click the card |
+| `// note` | A comment to myself, never drawn |
 
 ### Chain: a tree I fill in myself
 
@@ -55,7 +56,8 @@ F: houses + factories + vehicles + art
 | The first line under Chain | The top box |
 | A line indented with 2 spaces (Tab key) | A branch under the box above it |
 | `F: formula` under a box | The formula, shown on top of that box |
-| `(87M)` at the end of a line | The box's number. Clicking a box and typing a number writes this into my notes |
+| `(87M)` at the end of a line | The box's number |
+| Another unindented line | A new tree, drawn under the first one |
 
 The app does not do the maths for me. The **Maths** box next to the tree is a calculator: `5B/5`, `50% of 5B`, `2 crore + 30 lakh`, `1.45B / 5 × 3`. It shows the answer in B/M, in crore/lakh, and in full. Words like "people" or "rooms" are ignored, and Enter keeps the last 3 sums.
 

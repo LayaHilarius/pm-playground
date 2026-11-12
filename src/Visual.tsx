@@ -87,8 +87,8 @@ function ClarifyCard({ section }: { section: Section }) {
   )
 }
 
-function SectionView({ section, onSetValue }: { section: Section; onSetValue: (line: number, value: string) => void }) {
-  if (section.kind === 'chain') return <ChainView section={section} onSetValue={onSetValue} />
+function SectionView({ section }: { section: Section }) {
+  if (section.kind === 'chain') return <ChainView section={section} />
   if (section.kind === 'clarify') {
     if (section.ended) return <ClarifyCard section={section} />
     return (
@@ -132,13 +132,7 @@ export function StepBar({ steps }: { steps: Step[] }) {
   )
 }
 
-interface VisualProps {
-  sections: Section[]
-  steps: Step[]
-  onSetValue: (line: number, value: string) => void
-}
-
-export function Visual({ sections, steps, onSetValue }: VisualProps) {
+export function Visual({ sections, steps }: { sections: Section[]; steps: Step[] }) {
   // The Structure list lives in the step bar, so it isn't drawn again below.
   const body = sections.filter((s) => s.kind !== 'structure')
 
@@ -154,7 +148,7 @@ export function Visual({ sections, steps, onSetValue }: VisualProps) {
     <div className="visual">
       <StepBar steps={steps} />
       {body.map((section, i) => (
-        <SectionView key={i} section={section} onSetValue={onSetValue} />
+        <SectionView key={i} section={section} />
       ))}
     </div>
   )

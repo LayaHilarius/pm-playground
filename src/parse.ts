@@ -6,6 +6,7 @@
 //   Is this India only?     a plain line (or "- ...") is a new point
 //   -> Yes, India only      "->" is the answer to the point above, highlighted
 //     - urban and rural     an indented "-" (or "--") is a detail, hidden until I click
+//   // note to self          a comment: never drawn
 //   --end--                 closes the section. Clarify folds into one card of answers.
 //
 //   Structure               each line under Structure is one step of my answer.
@@ -14,7 +15,7 @@
 //   --end--
 //
 //   Chain                   lines under Chain become a tree (a flowchart).
-//   Paint cans (17Cr)       the first line is the top box; "(...)" at the end is its number
+//   Paint cans (17Cr)       an unindented line is the top of a tree; "(...)" at the end is its number
 //     Houses (87M)          indent with 2 spaces (or a tab) to make a branch
 //     F: houses × cans / 10 an "F:" line is the formula of the box above, shown on top of it
 
@@ -151,7 +152,8 @@ function parseSections(notes: string): Section[] {
 
   const lines = notes.split('\n')
   for (let lineNumber = 0; lineNumber < lines.length; lineNumber++) {
-    const rawLine = lines[lineNumber]
+    // "//" starts a comment: a note to myself that is never drawn.
+    const rawLine = lines[lineNumber].replace(/\s*\/\/.*$/, '')
     const line = rawLine.trim()
     if (line === '') continue
 
@@ -193,9 +195,9 @@ function parseSections(notes: string): Section[] {
 
     const lastPoint: Point | undefined = current.points[current.points.length - 1]
 
-    // "->" answer, highlighted under the point above it.
-    if (line.startsWith('->')) {
-      const answer = line.slice(2).trim()
+    // "->" (or the older "-(") answer, highlighted under the point above it.
+    if (line.startsWith('->') || line.startsWith('-(')) {
+      const answer = line.slice(2).replace(/\)$/, '').trim()
       if (answer === '') continue
       if (lastPoint) lastPoint.answers.push(answer)
       else current.points.push({ text: '', answers: [answer], details: [] })

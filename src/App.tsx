@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { NewQuestionDialog } from './NewQuestionDialog.tsx'
-import { parseNotes, splitValue } from './parse.ts'
+import { parseNotes } from './parse.ts'
 import { loadQuestions, saveQuestions, typeName, type Question } from './questions.ts'
 import { Visual } from './Visual.tsx'
 
@@ -34,18 +34,6 @@ export default function App() {
 
   function updateNotes(notes: string) {
     setQuestions(questions.map((q) => (q.id === activeId ? { ...q, notes } : q)))
-  }
-
-  // Typing a number in a Chain box writes it into my notes as "(value)" after that line.
-  function setNodeValue(lineNumber: number, value: string) {
-    if (!active) return
-    const lines = active.notes.split('\n')
-    const raw = lines[lineNumber]
-    if (raw === undefined) return
-    const indent = /^[ \t]*/.exec(raw)?.[0] ?? ''
-    const { text } = splitValue(raw.trim())
-    lines[lineNumber] = indent + text + (value.trim() ? ` (${value.trim()})` : '')
-    updateNotes(lines.join('\n'))
   }
 
   function deleteQuestion(id: string) {
@@ -119,12 +107,10 @@ export default function App() {
                 onChange={(e) => updateNotes(e.target.value)}
                 onKeyDown={(e) => {
                   // Tab indents by 2 spaces (for Chain branches) instead of leaving the box.
+                  // insertText goes through the browser's own typing, so Cmd+Z still undoes it.
                   if (e.key !== 'Tab' || e.shiftKey) return
                   e.preventDefault()
-                  const box = e.currentTarget
-                  const { selectionStart: start, selectionEnd: end, value } = box
-                  updateNotes(value.slice(0, start) + '  ' + value.slice(end))
-                  requestAnimationFrame(() => box.setSelectionRange(start + 2, start + 2))
+                  document.execCommand('insertText', false, '  ')
                 }}
                 placeholder={'Clarify\nIs this new cars only?\n-> Yes, new cars only\n--end--'}
                 spellCheck={false}
@@ -137,7 +123,7 @@ export default function App() {
             </section>
           )}
 
-          <Visual sections={sections} steps={steps} onSetValue={setNodeValue} />
+          <Visual sections={sections} steps={steps} />
         </main>
       )}
       {dialog}
