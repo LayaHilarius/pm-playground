@@ -119,26 +119,23 @@ function Calculator() {
   )
 }
 
-export function ChainView({ section, showMaths }: { section: Section; showMaths: boolean }) {
+export function ChainBody({ section, showMaths }: { section: Section; showMaths: boolean }) {
   return (
-    <section className="section">
-      <h2>{section.title}</h2>
-      <div className="chain-body">
-        <div className="chain-main">
-          {section.tree.length === 0 ? (
-            <p className="chain-hint">
-              Type the top box, then indent each branch with 2 spaces. Add <b>F:</b> under a box for its formula.
-            </p>
-          ) : (
-            <div className="sheets">
-              {section.tree.map((node) => (
-                <Sheet key={node.line} node={node} />
-              ))}
-            </div>
-          )}
-        </div>
-        {showMaths && <Calculator />}
+    <div className="chain-body">
+      <div className="chain-main">
+        {section.tree.length === 0 ? (
+          <p className="chain-hint">
+            Type the top box, then indent each branch with 2 spaces. Add <b>F:</b> under a box for its formula.
+          </p>
+        ) : (
+          <div className="sheets">
+            {section.tree.map((node) => (
+              <Sheet key={node.line} node={node} />
+            ))}
+          </div>
+        )}
       </div>
-    </section>
+      {showMaths && <Calculator />}
+    </div>
   )
 }

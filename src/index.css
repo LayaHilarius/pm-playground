@@ -231,7 +231,10 @@ mark.answer {
   line-height: 1.5;
 }
 .summary-card:hover { border-color: #b8c4dc; }
-.summary-card.open { flex-direction: column; border-color: var(--accent); }
+.folded.open { border: 1px solid var(--accent); border-radius: 12px; background: var(--surface); }
+.folded.open .summary-card { border: 0; }
+.folded.open .summary-answers { color: var(--accent); font-size: 13px; }
+.folded-body { padding: 4px 18px 18px; }
 .summary-title { display: flex; align-items: center; gap: 8px; flex: none; min-width: 110px; font-weight: 700; color: #0f5a3d; }
 .tick {
   width: 20px;

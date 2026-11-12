@@ -2,7 +2,7 @@
 // that fold into one answers card, and every other section as point cards.
 
 import { useState } from 'react'
-import { ChainView } from './Chain.tsx'
+import { ChainBody } from './Chain.tsx'
 import type { Point, Section, Step } from './parse.ts'
 
 function PointCard({ point }: { point: Point }) {
@@ -58,57 +58,69 @@ function ClarifyList({ section }: { section: Section }) {
   )
 }
 
-// After --end--: one card holding only the answers. Click to see the questions again.
-function ClarifyCard({ section }: { section: Section }) {
-  const [open, setOpen] = useState(false)
-  const answers = section.points.flatMap((p) => p.answers)
+// One line that says what a closed section holds.
+function summaryOf(section: Section): string {
+  if (section.kind === 'clarify') {
+    const answers = section.points.flatMap((p) => p.answers)
+    return answers.length > 0 ? answers.join(' · ') : 'No answers yet'
+  }
+  if (section.kind === 'chain') {
+    return section.tree
+      .map((root) => {
+        // Folded Chain shows its formula: "Paint cans per year = homes + apartments + …"
+        if (root.formula) return `${root.text} = ${root.formula}${root.value ? ` (${root.value})` : ''}`
+        if (root.value) return `${root.text} ${root.value}`
+        if (root.children.length > 0) return `${root.text}: ${root.children.map((c) => c.text).join(' + ')}`
+        return root.text
+      })
+      .join(' · ')
+  }
+  return section.points.map((p) => p.text).join(' · ')
+}
 
+// What a section looks like while I'm typing in it (or after I unfold it).
+function SectionBody({ section, showMaths }: { section: Section; showMaths: boolean }) {
+  if (section.kind === 'chain') return <ChainBody section={section} showMaths={showMaths} />
+  if (section.kind === 'clarify') return <ClarifyList section={section} />
+  if (section.points.length === 0) return null
   return (
-    <button
-      type="button"
-      className={open ? 'summary-card open' : 'summary-card'}
-      onClick={() => setOpen(!open)}
-      aria-expanded={open}
-    >
-      <span className="summary-title">
-        <span className="tick" aria-hidden="true">
-          ✓
+    <div className="point-grid">
+      {section.points.map((point, i) => (
+        <PointCard key={i} point={point} />
+      ))}
+    </div>
+  )
+}
+
+// After --end--: the section folds into one line. Click it to open it again.
+function FoldedSection({ section, showMaths }: { section: Section; showMaths: boolean }) {
+  const [open, setOpen] = useState(false)
+  return (
+    <div className={open ? 'folded open' : 'folded'}>
+      <button type="button" className="summary-card" onClick={() => setOpen(!open)} aria-expanded={open}>
+        <span className="summary-title">
+          <span className="tick" aria-hidden="true">
+            ✓
+          </span>
+          {section.title}
         </span>
-        {section.title}
-      </span>
-      {open ? (
-        <ClarifyList section={section} />
-      ) : (
-        <span className="summary-answers">
-          {answers.length > 0 ? answers.join(' · ') : 'No answers yet'}
-        </span>
+        <span className="summary-answers">{open ? 'Fold' : summaryOf(section)}</span>
+      </button>
+      {open && (
+        <div className="folded-body">
+          <SectionBody section={section} showMaths={showMaths} />
+        </div>
       )}
-    </button>
+    </div>
   )
 }
 
 function SectionView({ section, showMaths }: { section: Section; showMaths: boolean }) {
-  if (section.kind === 'chain') return <ChainView section={section} showMaths={showMaths} />
-  if (section.kind === 'clarify') {
-    if (section.ended) return <ClarifyCard section={section} />
-    return (
-      <section className="section">
-        <h2>{section.title}</h2>
-        <ClarifyList section={section} />
-      </section>
-    )
-  }
-
+  if (section.ended) return <FoldedSection section={section} showMaths={showMaths} />
   return (
     <section className="section">
       <h2>{section.title}</h2>
-      {section.points.length > 0 && (
-        <div className="point-grid">
-          {section.points.map((point, i) => (
-            <PointCard key={i} point={point} />
-          ))}
-        </div>
-      )}
+      <SectionBody section={section} showMaths={showMaths} />
     </section>
   )
 }
