@@ -52,7 +52,10 @@ src/questions.ts          question types, saving to the browser
 
 ## Run it
 
+Needs Node 20.19 or newer. With nvm, `nvm use` picks the version from `.nvmrc`.
+
 ```
+nvm use
 npm install
 npm run dev
 ```
