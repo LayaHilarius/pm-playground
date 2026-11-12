@@ -6,7 +6,8 @@
 //   Is this India only?     a plain line (or "- ...") is a new point
 //   -> Yes, India only      "->" is the answer to the point above, highlighted
 //     - urban and rural     an indented "-" (or "--") is a detail, hidden until I click
-//   // note to self          a comment: never drawn
+//   // note to self //       a comment, from // to the next //, never drawn.
+//                           It can span lines. Without a closing //, it stops at the end of the line.
 //   --end--                 closes the section. Clarify folds into one card of answers.
 //
 //   Structure               each line under Structure is one step of my answer.
@@ -104,6 +105,28 @@ function capitalize(text: string): string {
   return text.charAt(0).toUpperCase() + text.slice(1)
 }
 
+// Removes comments: from "//" to the next "//" (across lines if needed).
+// A "//" with no closing "//" after it is a comment to the end of its line.
+// Line breaks inside a comment are kept, so line numbers stay the same.
+export function stripComments(notes: string): string {
+  let out = ''
+  let i = 0
+  while (i < notes.length) {
+    const start = notes.indexOf('//', i)
+    if (start === -1) {
+      out += notes.slice(i)
+      break
+    }
+    out += notes.slice(i, start)
+    const close = notes.indexOf('//', start + 2)
+    const lineEnd = notes.indexOf('\n', start)
+    const end = close !== -1 ? close + 2 : lineEnd !== -1 ? lineEnd : notes.length
+    out += notes.slice(start, end).replace(/[^\n]/g, '')
+    i = end
+  }
+  return out
+}
+
 function indentOf(rawLine: string): number {
   const leading = /^[ \t]*/.exec(rawLine)?.[0] ?? ''
   return leading.replace(/\t/g, '  ').length
@@ -151,10 +174,9 @@ function parseSections(notes: string): Section[] {
   // Open boxes of the Chain tree, with how far each one is indented.
   let treeStack: { indent: number; node: TreeNode }[] = []
 
-  const lines = notes.split('\n')
+  const lines = stripComments(notes).split('\n')
   for (let lineNumber = 0; lineNumber < lines.length; lineNumber++) {
-    // "//" starts a comment: a note to myself that is never drawn.
-    const rawLine = lines[lineNumber].replace(/\s*\/\/.*$/, '')
+    const rawLine = lines[lineNumber]
     const line = rawLine.trim()
     if (line === '') continue
 

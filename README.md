@@ -35,7 +35,7 @@ Chain
 | `Structure`, then one step per line, then `--end--` | The step bar on top: ✓ done, ● the step I'm on, numbers for the rest |
 | A step's name on its own line | Opens that step and moves the bar along |
 | An indented `- detail` | A detail, hidden until I click the card |
-| `// note` | A comment to myself, never drawn |
+| `// note //` | A comment to myself, never drawn. It runs until the next `//`, even across lines. Without a closing `//` it stops at the end of the line |
 
 ### Chain and Solve: trees I fill in myself
 

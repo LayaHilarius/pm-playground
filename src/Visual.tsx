@@ -24,11 +24,6 @@ function PointCard({ point }: { point: Point }) {
           ))}
         </ul>
       )}
-      {canExpand && (
-        <span className="card-more">
-          {open ? 'Show less' : point.details.length > 0 ? `+${point.details.length} more` : 'Show more'}
-        </span>
-      )}
     </>
   )
 
@@ -104,7 +99,7 @@ function FoldedSection({ section, showMaths }: { section: Section; showMaths: bo
           </span>
           {section.title}
         </span>
-        <span className="summary-answers">{open ? 'Fold' : summaryOf(section)}</span>
+        <span className="summary-answers">{summaryOf(section)}</span>
       </button>
       {open && (
         <div className="folded-body">

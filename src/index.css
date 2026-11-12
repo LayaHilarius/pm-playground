@@ -337,17 +337,8 @@ mark.answer {
   color: var(--text);
 }
 .sheet.folded:hover { border-color: var(--accent); }
-.sheet-fold {
-  position: absolute;
-  top: 8px;
-  right: 8px;
-  padding: 2px 8px;
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  background: var(--surface);
-  color: var(--faint);
-  font-size: 12px;
-}
+.sheet.clickable { cursor: pointer; }
+.sheet.clickable:hover { border-color: var(--accent); }
 .tree-scroll { overflow-x: auto; padding-top: 8px; }
 /* max-content + auto margins: centred when it fits, scrolls from the left edge when it doesn't */
 .tree { width: max-content; margin: 0 auto; }

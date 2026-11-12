@@ -46,18 +46,20 @@ function Sheet({ node }: { node: TreeNode }) {
         </span>
         <span className="tree-name">{node.text}</span>
         <span className="tree-value">{node.value}</span>
-        {node.children.length > 0 && <span className="card-more">Show working</span>}
       </button>
     )
   }
 
   return (
-    <div className="sheet">
-      {done && (
-        <button type="button" className="sheet-fold" onClick={() => setOpen(false)}>
-          Fold
-        </button>
-      )}
+    // Clicking an open, solved sheet folds it back.
+    <div
+      className={done ? 'sheet clickable' : 'sheet'}
+      onClick={done ? () => setOpen(false) : undefined}
+      onKeyDown={done ? (e) => e.key === 'Enter' && setOpen(false) : undefined}
+      role={done ? 'button' : undefined}
+      tabIndex={done ? 0 : undefined}
+      aria-expanded={done ? true : undefined}
+    >
       <div className="tree-scroll">
         <ul className="tree">
           <TreeBranch node={node} />
