@@ -4,7 +4,7 @@
 //   Clarify                 a heading: a known word on its own line,
 //                           or any line starting with "#" or ending with ":"
 //   Is this India only?     a plain line (or "- ...") is a new point
-//   -( Yes, India only      "-(" is the answer to the point above, highlighted
+//   -> Yes, India only      "->" is the answer to the point above, highlighted
 //     - urban and rural     an indented "-" (or "--") is a detail, hidden until I click
 //   --end--                 closes the section. Clarify folds into one card of answers.
 //
@@ -125,9 +125,9 @@ function parseSections(notes: string): Section[] {
 
     const lastPoint: Point | undefined = current.points[current.points.length - 1]
 
-    // "-(" answer, highlighted under the point above it.
-    if (line.startsWith('-(')) {
-      const answer = line.slice(2).replace(/\)$/, '').trim()
+    // "->" answer, highlighted under the point above it.
+    if (line.startsWith('->')) {
+      const answer = line.slice(2).trim()
       if (answer === '') continue
       if (lastPoint) lastPoint.answers.push(answer)
       else current.points.push({ text: '', answers: [answer], details: [] })

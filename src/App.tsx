@@ -105,12 +105,12 @@ export default function App() {
               <textarea
                 value={active.notes}
                 onChange={(e) => updateNotes(e.target.value)}
-                placeholder={'Clarify\nIs this new cars only?\n-( Yes, new cars only\n--end--'}
+                placeholder={'Clarify\nIs this new cars only?\n-> Yes, new cars only\n--end--'}
                 spellCheck={false}
                 autoFocus
               />
               <p className="notes-help">
-                <b>Clarify</b> starts a section · <b>-(</b> answer · <b>--end--</b> closes it ·{' '}
+                <b>Clarify</b> starts a section · <b>-&gt;</b> answer · <b>--end--</b> closes it ·{' '}
                 <b>Structure</b> then one step per line, closed with <b>--end--</b>, makes the step bar
               </p>
             </section>

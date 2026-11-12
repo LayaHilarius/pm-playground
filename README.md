@@ -11,7 +11,7 @@ Guesstimate steps, "two Cs, four Ss": **Clarify, Chain, Segment, Solve, Sanity c
 ```
 Clarify
 New cars only, or used too?
--( New cars only
+-> New cars only
 --end--
 
 Structure
@@ -30,7 +30,7 @@ Chain
 | I type | It shows |
 | --- | --- |
 | `Clarify` on its own line | My questions as bullets |
-| `-( answer` | The answer to the question above, highlighted |
+| `-> answer` | The answer to the question above, highlighted |
 | `--end--` | Closes the section. Clarify folds into one card of answers only (click to open it again) |
 | `Structure`, then one step per line, then `--end--` | The step bar on top: ✓ done, ● the step I'm on, numbers for the rest |
 | A step's name on its own line | Opens that step and moves the bar along |

@@ -138,7 +138,7 @@ export function Visual({ sections, steps }: { sections: Section[]; steps: Step[]
     return (
       <div className="visual-empty">
         <p>Start typing on the left. Try:</p>
-        <pre>{`Clarify\nNew cars only, or used too?\n-( New only\n--end--\n\nStructure\nClarify\nChain\nSegment\n--end--`}</pre>
+        <pre>{`Clarify\nNew cars only, or used too?\n-> New only\n--end--\n\nStructure\nClarify\nChain\nSegment\n--end--`}</pre>
       </div>
     )
   }
