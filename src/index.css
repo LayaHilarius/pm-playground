@@ -315,9 +315,37 @@ mark.answer {
 .calc-error { font-size: 13px; color: #b42318; }
 .calc-history { margin: 0; padding: 6px 0 0; list-style: none; border-top: 1px solid var(--border); font: 12px ui-monospace, Menlo, monospace; color: var(--faint); }
 
-.trees { display: flex; flex-direction: column; gap: 28px; }
-.tree-scroll { overflow-x: auto; padding: 12px 0 8px; border-bottom: 1px dashed var(--border); }
-.tree-scroll:last-child { border-bottom: 0; }
+.sheets { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 16px; }
+.sheet {
+  position: relative;
+  max-width: 100%;
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: #fbfcfd;
+}
+.sheet.folded {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  min-width: 150px;
+  padding: 14px 18px;
+  color: var(--text);
+}
+.sheet.folded:hover { border-color: var(--accent); }
+.sheet-fold {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  padding: 2px 8px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface);
+  color: var(--faint);
+  font-size: 12px;
+}
+.tree-scroll { overflow-x: auto; padding-top: 8px; }
 /* max-content + auto margins: centred when it fits, scrolls from the left edge when it doesn't */
 .tree { width: max-content; margin: 0 auto; }
 .tree, .tree ul { display: flex; padding: 0; }

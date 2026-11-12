@@ -1,4 +1,4 @@
-// Chain: my notes drawn as a tree, plus a calculator in the corner.
+// Chain and Solve: my notes drawn as trees (one sheet each), plus a calculator in the corner.
 // I do the maths myself; numbers come from "(value)" in my notes.
 
 import { useState } from 'react'
@@ -29,6 +29,41 @@ function TreeBranch({ node }: { node: TreeNode }) {
         </ul>
       )}
     </li>
+  )
+}
+
+// Each top-level box is a sheet, side by side. Once its top box has a number,
+// the sheet folds down to just that number. Click it to see the working again.
+function Sheet({ node }: { node: TreeNode }) {
+  const done = node.value !== ''
+  const [open, setOpen] = useState(false)
+
+  if (done && !open) {
+    return (
+      <button type="button" className="sheet folded" onClick={() => setOpen(true)} aria-expanded={false}>
+        <span className="tick" aria-hidden="true">
+          ✓
+        </span>
+        <span className="tree-name">{node.text}</span>
+        <span className="tree-value">{node.value}</span>
+        {node.children.length > 0 && <span className="card-more">Show working</span>}
+      </button>
+    )
+  }
+
+  return (
+    <div className="sheet">
+      {done && (
+        <button type="button" className="sheet-fold" onClick={() => setOpen(false)}>
+          Fold
+        </button>
+      )}
+      <div className="tree-scroll">
+        <ul className="tree">
+          <TreeBranch node={node} />
+        </ul>
+      </div>
+    </div>
   )
 }
 
@@ -84,7 +119,7 @@ function Calculator() {
   )
 }
 
-export function ChainView({ section }: { section: Section }) {
+export function ChainView({ section, showMaths }: { section: Section; showMaths: boolean }) {
   return (
     <section className="section">
       <h2>{section.title}</h2>
@@ -95,19 +130,14 @@ export function ChainView({ section }: { section: Section }) {
               Type the top box, then indent each branch with 2 spaces. Add <b>F:</b> under a box for its formula.
             </p>
           ) : (
-            <div className="trees">
-              {/* Each top-level box is its own tree, one under the other, each scrolling sideways if wide. */}
+            <div className="sheets">
               {section.tree.map((node) => (
-                <div key={node.line} className="tree-scroll">
-                  <ul className="tree">
-                    <TreeBranch node={node} />
-                  </ul>
-                </div>
+                <Sheet key={node.line} node={node} />
               ))}
             </div>
           )}
         </div>
-        <Calculator />
+        {showMaths && <Calculator />}
       </div>
     </section>
   )

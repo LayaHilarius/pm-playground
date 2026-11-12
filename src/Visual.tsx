@@ -87,8 +87,8 @@ function ClarifyCard({ section }: { section: Section }) {
   )
 }
 
-function SectionView({ section }: { section: Section }) {
-  if (section.kind === 'chain') return <ChainView section={section} />
+function SectionView({ section, showMaths }: { section: Section; showMaths: boolean }) {
+  if (section.kind === 'chain') return <ChainView section={section} showMaths={showMaths} />
   if (section.kind === 'clarify') {
     if (section.ended) return <ClarifyCard section={section} />
     return (
@@ -135,6 +135,8 @@ export function StepBar({ steps }: { steps: Step[] }) {
 export function Visual({ sections, steps }: { sections: Section[]; steps: Step[] }) {
   // The Structure list lives in the step bar, so it isn't drawn again below.
   const body = sections.filter((s) => s.kind !== 'structure')
+  // One Maths box only, next to the latest tree (Chain or Solve).
+  const lastTree = body.filter((s) => s.kind === 'chain').at(-1)
 
   if (sections.length === 0) {
     return (
@@ -148,7 +150,7 @@ export function Visual({ sections, steps }: { sections: Section[]; steps: Step[]
     <div className="visual">
       <StepBar steps={steps} />
       {body.map((section, i) => (
-        <SectionView key={i} section={section} />
+        <SectionView key={i} section={section} showMaths={section === lastTree} />
       ))}
     </div>
   )

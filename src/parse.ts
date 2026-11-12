@@ -95,7 +95,8 @@ function kindOf(title: string): SectionKind {
   const t = normalize(title)
   if (t.startsWith('clarif')) return 'clarify'
   if (STRUCTURE_HEADINGS.includes(t)) return 'structure'
-  if (t === 'chain') return 'chain'
+  // Chain (the formula tree) and Solve (the same tree with numbers) are both drawn as trees.
+  if (t === 'chain' || t === 'solve') return 'chain'
   return 'list'
 }
 

@@ -37,7 +37,9 @@ Chain
 | An indented `- detail` | A detail, hidden until I click the card |
 | `// note` | A comment to myself, never drawn |
 
-### Chain: a tree I fill in myself
+### Chain and Solve: trees I fill in myself
+
+Chain is the formula tree, no numbers yet. Solve is the same idea with numbers. Each top-level line is its own sheet, side by side; a sheet whose top box has a number folds down to that number (click it to see the working).
 
 ```
 Chain
