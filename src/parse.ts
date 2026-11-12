@@ -12,8 +12,21 @@
 //   Clarify                 They become the step bar on top. Close the list with --end--.
 //   Chain                   After that, typing a step's name opens that step.
 //   --end--
+//
+//   Chain                   lines under Chain become a tree (a flowchart).
+//   Paint cans (17Cr)       the first line is the top box; "(...)" at the end is its number
+//     Houses (87M)          indent with 2 spaces (or a tab) to make a branch
+//     F: houses × cans / 10 an "F:" line is the formula of the box above, shown on top of it
 
-export type SectionKind = 'clarify' | 'structure' | 'list'
+export type SectionKind = 'clarify' | 'structure' | 'chain' | 'list'
+
+export interface TreeNode {
+  text: string
+  value: string
+  formula: string
+  line: number // which line of my notes this box came from, so the box can write back to it
+  children: TreeNode[]
+}
 
 export interface Point {
   text: string
@@ -25,6 +38,7 @@ export interface Section {
   title: string
   kind: SectionKind
   points: Point[]
+  tree: TreeNode[]
   ended: boolean
 }
 
@@ -80,6 +94,7 @@ function kindOf(title: string): SectionKind {
   const t = normalize(title)
   if (t.startsWith('clarif')) return 'clarify'
   if (STRUCTURE_HEADINGS.includes(t)) return 'structure'
+  if (t === 'chain') return 'chain'
   return 'list'
 }
 
@@ -87,12 +102,56 @@ function capitalize(text: string): string {
   return text.charAt(0).toUpperCase() + text.slice(1)
 }
 
+function indentOf(rawLine: string): number {
+  const leading = /^[ \t]*/.exec(rawLine)?.[0] ?? ''
+  return leading.replace(/\t/g, '  ').length
+}
+
+// "Houses (87M)" -> text "Houses", value "87M"
+export function splitValue(text: string): { text: string; value: string } {
+  const match = /^(.*?)\s*\(([^()]*)\)\s*$/.exec(text)
+  if (!match) return { text, value: '' }
+  return { text: match[1], value: match[2].trim() }
+}
+
+function addToTree(
+  roots: TreeNode[],
+  stack: { indent: number; node: TreeNode }[],
+  line: string,
+  indent: number,
+  lineNumber: number,
+) {
+  const clean = line.replace(/^[-*•]\s*/, '')
+
+  // "F: ..." is the formula of the box above.
+  const formula = /^f\s*:\s*(.*)$/i.exec(clean)
+  if (formula) {
+    const last = stack[stack.length - 1]
+    if (last) last.node.formula = formula[1].trim()
+    return
+  }
+
+  const { text, value } = splitValue(clean)
+  const node: TreeNode = { text, value, formula: '', line: lineNumber, children: [] }
+
+  // Close every open box that is indented as much as this line, or more.
+  while (stack.length > 0 && stack[stack.length - 1].indent >= indent) stack.pop()
+  const parent = stack[stack.length - 1]
+  if (parent) parent.node.children.push(node)
+  else roots.push(node)
+  stack.push({ indent, node })
+}
+
 function parseSections(notes: string): Section[] {
   const sections: Section[] = []
   const stepNames: string[] = []
   let current: Section | null = null
+  // Open boxes of the Chain tree, with how far each one is indented.
+  let treeStack: { indent: number; node: TreeNode }[] = []
 
-  for (const rawLine of notes.split('\n')) {
+  const lines = notes.split('\n')
+  for (let lineNumber = 0; lineNumber < lines.length; lineNumber++) {
+    const rawLine = lines[lineNumber]
     const line = rawLine.trim()
     if (line === '') continue
 
@@ -110,16 +169,25 @@ function parseSections(notes: string): Section[] {
       continue
     }
 
-    const title = headingTitle(line, stepNames)
+    // Inside Chain, an indented line is always a box, even if it is called "Segment".
+    const indent = indentOf(rawLine)
+    const inChain: boolean = current !== null && current.kind === 'chain' && !current.ended
+    const title: string | null = inChain && indent > 0 ? null : headingTitle(line, stepNames)
     if (title !== null) {
-      current = { title: capitalize(title), kind: kindOf(title), points: [], ended: false }
+      current = { title: capitalize(title), kind: kindOf(title), points: [], tree: [], ended: false }
       sections.push(current)
+      treeStack = []
+      continue
+    }
+
+    if (inChain && current) {
+      addToTree(current.tree, treeStack, line, indent, lineNumber)
       continue
     }
 
     // Text typed before any heading still shows up.
     if (current === null) {
-      current = { title: 'Notes', kind: 'list', points: [], ended: false }
+      current = { title: 'Notes', kind: 'list', points: [], tree: [], ended: false }
       sections.push(current)
     }
 

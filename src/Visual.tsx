@@ -2,6 +2,7 @@
 // that fold into one answers card, and every other section as point cards.
 
 import { useState } from 'react'
+import { ChainView } from './Chain.tsx'
 import type { Point, Section, Step } from './parse.ts'
 
 function PointCard({ point }: { point: Point }) {
@@ -86,7 +87,8 @@ function ClarifyCard({ section }: { section: Section }) {
   )
 }
 
-function SectionView({ section }: { section: Section }) {
+function SectionView({ section, onSetValue }: { section: Section; onSetValue: (line: number, value: string) => void }) {
+  if (section.kind === 'chain') return <ChainView section={section} onSetValue={onSetValue} />
   if (section.kind === 'clarify') {
     if (section.ended) return <ClarifyCard section={section} />
     return (
@@ -130,7 +132,13 @@ export function StepBar({ steps }: { steps: Step[] }) {
   )
 }
 
-export function Visual({ sections, steps }: { sections: Section[]; steps: Step[] }) {
+interface VisualProps {
+  sections: Section[]
+  steps: Step[]
+  onSetValue: (line: number, value: string) => void
+}
+
+export function Visual({ sections, steps, onSetValue }: VisualProps) {
   // The Structure list lives in the step bar, so it isn't drawn again below.
   const body = sections.filter((s) => s.kind !== 'structure')
 
@@ -146,7 +154,7 @@ export function Visual({ sections, steps }: { sections: Section[]; steps: Step[]
     <div className="visual">
       <StepBar steps={steps} />
       {body.map((section, i) => (
-        <SectionView key={i} section={section} />
+        <SectionView key={i} section={section} onSetValue={onSetValue} />
       ))}
     </div>
   )

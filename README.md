@@ -36,7 +36,28 @@ Chain
 | A step's name on its own line | Opens that step and moves the bar along |
 | An indented `- detail` | A detail, hidden until I click the card |
 
-Next: a visual for each step, starting with Chain.
+### Chain: a tree I fill in myself
+
+```
+Chain
+Paint cans per year
+F: houses + factories + vehicles + art
+  Houses (87M)
+  F: 1.45B / 5 × 3 rooms / 10 yrs
+  Factories
+  Vehicles
+    Cars
+    Two-wheelers
+```
+
+| I type | It shows |
+| --- | --- |
+| The first line under Chain | The top box |
+| A line indented with 2 spaces (Tab key) | A branch under the box above it |
+| `F: formula` under a box | The formula, shown on top of that box |
+| `(87M)` at the end of a line | The box's number. Clicking a box and typing a number writes this into my notes |
+
+The app does not do the maths for me. The **Maths** box next to the tree is a calculator: `5B/5`, `50% of 5B`, `2 crore + 30 lakh`, `1.45B / 5 × 3`. It shows the answer in B/M, in crore/lakh, and in full. Words like "people" or "rooms" are ignored, and Enter keeps the last 3 sums.
 
 Everything is saved in my browser. Nothing leaves my laptop.
 
@@ -44,7 +65,9 @@ Everything is saved in my browser. Nothing leaves my laptop.
 
 ```
 src/parse.ts              notes text -> sections (plain TypeScript, no React)
-src/Visual.tsx            draws the sections: Q&A cards, stages, expandable cards
+src/Visual.tsx            draws the sections and the step bar
+src/Chain.tsx             the Chain tree and the Maths box
+src/calc.ts               the calculator (no React)
 src/App.tsx               first page, tabs, notes box
 src/NewQuestionDialog.tsx the "+ New" form
 src/questions.ts          question types, saving to the browser
