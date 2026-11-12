@@ -118,7 +118,8 @@ export default function App() {
               />
               <p className="notes-help">
                 <b>Clarify</b> starts a section · <b>-&gt;</b> answer · <b>--end--</b> closes it ·{' '}
-                <b>Structure</b> then one step per line, closed with <b>--end--</b>, makes the step bar
+                <b>Structure</b> then one step per line, closed with <b>--end--</b>, makes the step bar ·{' '}
+                <b>--pie--</b> / <b>--bar--</b> / <b>--table--</b> with <b>key,value</b> lines, closed with <b>--end--</b>
               </p>
             </section>
           )}

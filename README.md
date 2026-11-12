@@ -37,6 +37,26 @@ Chain
 | An indented `- detail` | A detail, hidden until I click the card |
 | `// note //` | A comment to myself, never drawn. It runs until the next `//`, even across lines. Without a closing `//` it stops at the end of the line |
 
+### Charts, in any step
+
+```
+--pie--
+Rich,10%
+-> repaint every 4 years
+Middle,40%
+Low,50%
+--end--
+```
+
+| I type | It shows |
+| --- | --- |
+| `--pie--`, then `key,value` lines, then `--end--` | A pie chart. Values can be `10%`, `290M`, `2 crore`. A line with no value gets an equal share |
+| `--bar--` … `--end--` | A bar chart, same lines |
+| `--table--`, then `key,value,value…` lines, then `--end--` | A table. The first line is the header |
+| `-> note` under a pie or bar line | How that segment behaves, shown next to it |
+
+If every value is a % and they don't add up to 100%, the chart says so.
+
 ### Chain and Solve: trees I fill in myself
 
 Chain is the formula tree, no numbers yet. Solve is the same idea with numbers. Each top-level line is its own sheet, side by side; a sheet whose top box has a number folds down to that number (click it to see the working).

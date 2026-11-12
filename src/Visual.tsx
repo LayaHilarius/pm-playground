@@ -3,6 +3,7 @@
 
 import { useState } from 'react'
 import { ChainBody } from './Chain.tsx'
+import { ChartView } from './Charts.tsx'
 import type { Point, Section, Step } from './parse.ts'
 
 function PointCard({ point }: { point: Point }) {
@@ -75,15 +76,28 @@ function summaryOf(section: Section): string {
 
 // What a section looks like while I'm typing in it (or after I unfold it).
 function SectionBody({ section, showMaths }: { section: Section; showMaths: boolean }) {
-  if (section.kind === 'chain') return <ChainBody section={section} showMaths={showMaths} />
-  if (section.kind === 'clarify') return <ClarifyList section={section} />
-  if (section.points.length === 0) return null
+  let main = null
+  if (section.kind === 'chain') main = <ChainBody section={section} showMaths={showMaths} />
+  else if (section.kind === 'clarify') main = <ClarifyList section={section} />
+  else if (section.points.length > 0)
+    main = (
+      <div className="point-grid">
+        {section.points.map((point, i) => (
+          <PointCard key={i} point={point} />
+        ))}
+      </div>
+    )
   return (
-    <div className="point-grid">
-      {section.points.map((point, i) => (
-        <PointCard key={i} point={point} />
-      ))}
-    </div>
+    <>
+      {main}
+      {section.charts.length > 0 && (
+        <div className="charts">
+          {section.charts.map((chart, i) => (
+            <ChartView key={i} chart={chart} />
+          ))}
+        </div>
+      )}
+    </>
   )
 }
 

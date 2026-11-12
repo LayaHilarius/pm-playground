@@ -1,3 +1,5 @@
+import { calculate } from './calc.ts'
+
 // Turns the notes I type into sections the screen can draw.
 //
 // How I write notes:
@@ -36,11 +38,27 @@ export interface Point {
   details: string[]
 }
 
+export type ChartType = 'pie' | 'bar' | 'table'
+
+export interface ChartItem {
+  label: string
+  shown: string // the value as I typed it: "10%", "290M"
+  value: number | null // the same value as a number, if it has one
+  note: string // a "->" line under it: how this segment behaves
+}
+
+export interface Chart {
+  type: ChartType
+  items: ChartItem[] // pie and bar
+  rows: string[][] // table: "key,value,value" -> cells, first row is the header
+}
+
 export interface Section {
   title: string
   kind: SectionKind
   points: Point[]
   tree: TreeNode[]
+  charts: Chart[]
   ended: boolean
 }
 
@@ -127,6 +145,49 @@ export function stripComments(notes: string): string {
   return out
 }
 
+// --pie-- ... --end--: one "key,value" per line (value can be 10%, 290M, 2 crore).
+// --table-- ... --end--: "key,value,value" per line, the first line is the header.
+const CHART_MARKER = /^--(pie|bar|table)--$/i
+
+// "Rich,10%" -> label + value. ("Rich 10%" works too.) No number -> equal share.
+function chartItem(line: string): ChartItem {
+  const text = line.replace(/^[-*•]\s*/, '')
+  const comma = text.indexOf(',')
+  if (comma !== -1) {
+    const label = text.slice(0, comma).trim()
+    const shown = text.slice(comma + 1).trim()
+    let value: number | null = null
+    try {
+      value = shown === '' ? null : calculate(shown)
+    } catch {
+      value = null
+    }
+    return { label, shown, value, note: '' }
+  }
+  const match = /^(.*?)[\s:=]*\(?\s*(-?[\d.,]+\s*(?:%|k|m|mn|b|bn|cr|crores?|l|lakhs?|thousand|million|billion)?)\s*\)?$/i.exec(text)
+  if (!match || match[1].trim() === '') return { label: text, shown: '', value: null, note: '' }
+  let value: number | null = null
+  try {
+    value = calculate(match[2])
+  } catch {
+    value = null
+  }
+  return { label: match[1].trim(), shown: match[2].trim(), value, note: '' }
+}
+
+function addToChart(chart: Chart, line: string) {
+  if (chart.type === 'table') {
+    chart.rows.push(line.split(',').map((cell) => cell.trim()))
+    return
+  }
+  const last = chart.items[chart.items.length - 1]
+  if (line.startsWith('->') && last) {
+    last.note = line.slice(2).trim()
+    return
+  }
+  chart.items.push(chartItem(line))
+}
+
 function indentOf(rawLine: string): number {
   const leading = /^[ \t]*/.exec(rawLine)?.[0] ?? ''
   return leading.replace(/\t/g, '  ').length
@@ -173,11 +234,39 @@ function parseSections(notes: string): Section[] {
   let current: Section | null = null
   // Open boxes of the Chain tree, with how far each one is indented.
   let treeStack: { indent: number; node: TreeNode }[] = []
+  let openChart: Chart | null = null
 
   const lines = stripComments(notes).split('\n')
   for (let lineNumber = 0; lineNumber < lines.length; lineNumber++) {
     const rawLine = lines[lineNumber]
     const line = rawLine.trim()
+
+    // --pie--, --bar--, --table-- open a chart in any section. --end-- closes the chart
+    // (not the section). Starting a new heading also closes it, in case I forget.
+    const marker = CHART_MARKER.exec(line)
+    if (marker) {
+      const type = marker[1].toLowerCase() as ChartType
+      if (current === null) {
+        current = { title: 'Notes', kind: 'list', points: [], tree: [], charts: [], ended: false }
+        sections.push(current)
+      }
+      openChart = { type, items: [], rows: [] }
+      current.charts.push(openChart)
+      continue
+    }
+    if (openChart) {
+      if (line === '') continue
+      if (line.toLowerCase() === END_MARKER) {
+        openChart = null
+        continue
+      }
+      if (indentOf(rawLine) > 0 || headingTitle(line, stepNames) === null) {
+        addToChart(openChart, line)
+        continue
+      }
+      openChart = null
+    }
+
     if (line === '') continue
 
     if (line.toLowerCase() === END_MARKER) {
@@ -199,7 +288,7 @@ function parseSections(notes: string): Section[] {
     const inChain: boolean = current !== null && current.kind === 'chain' && !current.ended
     const title: string | null = inChain && indent > 0 ? null : headingTitle(line, stepNames)
     if (title !== null) {
-      current = { title: capitalize(title), kind: kindOf(title), points: [], tree: [], ended: false }
+      current = { title: capitalize(title), kind: kindOf(title), points: [], tree: [], charts: [], ended: false }
       sections.push(current)
       treeStack = []
       continue
@@ -212,7 +301,7 @@ function parseSections(notes: string): Section[] {
 
     // Text typed before any heading still shows up.
     if (current === null) {
-      current = { title: 'Notes', kind: 'list', points: [], tree: [], ended: false }
+      current = { title: 'Notes', kind: 'list', points: [], tree: [], charts: [], ended: false }
       sections.push(current)
     }
 
