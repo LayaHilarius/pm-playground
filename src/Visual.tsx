@@ -58,6 +58,7 @@ function ClarifyList({ section }: { section: Section }) {
 function summaryOf(section: Section): string {
   const parts: string[] = []
   if (section.kind === 'clarify') {
+    if (section.note) parts.push(section.note)
     const answers = section.points.flatMap((p) => p.answers)
     parts.push(answers.length > 0 ? answers.join(' · ') : 'No answers yet')
   } else if (section.kind === 'chain') {
