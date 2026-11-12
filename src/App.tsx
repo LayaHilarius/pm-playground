@@ -8,6 +8,35 @@ function Logo({ size }: { size: number }) {
   return <img src="./logo.svg" width={size} height={size} alt="" />
 }
 
+// Tab indents by 2 spaces instead of leaving the box. With several lines selected, every
+// selected line moves in one step. Shift+Tab moves them back out.
+// Edits go through insertText (the browser's own typing), so Cmd+Z still undoes them.
+function indentWithTab(box: HTMLTextAreaElement, outdent: boolean) {
+  const { selectionStart: start, selectionEnd: end, value } = box
+  const multiLine = value.slice(start, end).includes('\n')
+
+  if (!multiLine && !outdent) {
+    document.execCommand('insertText', false, '  ')
+    return
+  }
+
+  // Grow the selection to whole lines.
+  const blockStart = value.lastIndexOf('\n', start - 1) + 1
+  const lastLineEnd = value.indexOf('\n', end > start && value[end - 1] === '\n' ? end - 1 : end)
+  const blockEnd = lastLineEnd === -1 ? value.length : lastLineEnd
+  const lines = value.slice(blockStart, blockEnd).split('\n')
+  const changed = lines.map((line) => (outdent ? line.replace(/^ {1,2}|^\t/, '') : '  ' + line)).join('\n')
+
+  box.setSelectionRange(blockStart, blockEnd)
+  document.execCommand('insertText', false, changed)
+  if (multiLine) box.setSelectionRange(blockStart, blockStart + changed.length)
+  else {
+    // One line moved out: keep the cursor where it was in the text.
+    const caret = Math.max(blockStart, start - (blockEnd - blockStart - changed.length))
+    box.setSelectionRange(caret, caret)
+  }
+}
+
 export default function App() {
   const [questions, setQuestions] = useState<Question[]>(loadQuestions)
   const [activeId, setActiveId] = useState<string | null>(() => questions[0]?.id ?? null)
@@ -106,11 +135,9 @@ export default function App() {
                 value={active.notes}
                 onChange={(e) => updateNotes(e.target.value)}
                 onKeyDown={(e) => {
-                  // Tab indents by 2 spaces (for Chain branches) instead of leaving the box.
-                  // insertText goes through the browser's own typing, so Cmd+Z still undoes it.
-                  if (e.key !== 'Tab' || e.shiftKey) return
+                  if (e.key !== 'Tab') return
                   e.preventDefault()
-                  document.execCommand('insertText', false, '  ')
+                  indentWithTab(e.currentTarget, e.shiftKey)
                 }}
                 placeholder={'Clarify\nIs this new cars only?\n-> Yes, new cars only\n--end--'}
                 spellCheck={false}
