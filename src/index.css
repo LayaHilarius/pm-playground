@@ -80,6 +80,33 @@ button { font: inherit; cursor: pointer; }
 .tab-title { min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .tab.active { border-color: var(--accent); background: var(--accent-soft); color: var(--text); }
 .tab.new { border-style: dashed; background: transparent; }
+/* A tab holds two buttons: open the question, and × to delete it */
+.tab:not(.new) { padding: 0 4px 0 0; gap: 0; }
+.tab-open {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  padding: 8px 6px 8px 14px;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+.tab-close {
+  flex: none;
+  width: 24px;
+  height: 24px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--muted);
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+}
+.tab-close:hover { background: #fde8e8; color: #c62828; }
 .badge {
   flex: none;
   padding: 2px 8px;

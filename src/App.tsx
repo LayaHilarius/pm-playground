@@ -100,14 +100,20 @@ export default function App() {
         </div>
         <nav className="tabs" aria-label="Questions">
           {questions.map((q) => (
-            <button
-              key={q.id}
-              className={q.id === activeId ? 'tab active' : 'tab'}
-              onClick={() => setActiveId(q.id)}
-            >
-              <span className="tab-title">{q.title}</span>
-              <span className="badge">{typeName(q.type)}</span>
-            </button>
+            <div key={q.id} className={q.id === activeId ? 'tab active' : 'tab'}>
+              <button className="tab-open" onClick={() => setActiveId(q.id)}>
+                <span className="tab-title">{q.title}</span>
+                <span className="badge">{typeName(q.type)}</span>
+              </button>
+              <button
+                className="tab-close"
+                onClick={() => deleteQuestion(q.id)}
+                aria-label={`Delete ${q.title}`}
+                title="Delete this question"
+              >
+                ×
+              </button>
+            </div>
           ))}
           <button className="tab new" onClick={() => setDialogOpen(true)}>
             + New
