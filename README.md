@@ -85,12 +85,27 @@ The app does not do the maths for me. The **Maths** box next to the tree is a ca
 
 Everything is saved in my browser. Nothing leaves my laptop.
 
+## Product sense notes
+
+Pick **Product sense** in + New. Clarify, Structure, `->` answers, `--end--` and the charts work the same way. The headings it knows: Goal, Mission, Users, User journey, Pain points, Solutions, Metrics, Guardrails, Tradeoffs, Summary.
+
+| I type | It draws |
+| --- | --- |
+| `User journey`, then one stage per line | Numbered stages, top to bottom |
+| A line indented under a stage | A pain point inside that stage |
+| `low`, `moderate`, `high` or `very high` indented under it | Its friction: four dashes, green to red |
+| Any other indented line | A description |
+| A line under Pain points, Solutions, Metrics… | A card; indented lines are its description and friction |
+| `P0`–`P3` (or `high`, `low`) indented under a solution | Its priority badge |
+| A line ending in ` *`, or a click on its star | The north star (one per section). Hover it to see it shoot |
+
 ## Where the code is
 
 ```
 src/parse.ts              notes text -> sections (plain TypeScript, no React)
 src/Visual.tsx            draws the sections and the step bar
 src/Chain.tsx             the Chain tree and the Maths box
+src/Product.tsx           north star, friction and priority, the User journey
 src/calc.ts               the calculator (no React)
 src/App.tsx               first page, tabs, notes box
 src/NewQuestionDialog.tsx the "+ New" form
