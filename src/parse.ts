@@ -56,12 +56,27 @@ export interface Point {
   level: Level | null
   star: boolean // the line ends with " *": my north star, or my pick
   line: number // which line of my notes it came from, so clicking the star can write " *" back
+  indent: number // how far that line is indented
+  levelLine: number // the line holding its friction / priority word, or -1
+  endLine: number // its last line (descriptions included), so a new friction line goes after it
   children: Point[] // User journey: the pain points inside a stage
 }
 
-function newPoint(text: string, line: number, answers: string[] = []): Point {
+function newPoint(text: string, line: number, answers: string[] = [], indent = 0): Point {
   const { text: clean, star } = splitStar(text)
-  return { text: clean, answers, details: [], level: null, star, line, children: [] }
+  return { text: clean, answers, details: [], level: null, star, line, indent, levelLine: -1, endLine: line, children: [] }
+}
+
+// Remembers which line set a point's friction, and that the point now reaches this line.
+function setLevel(point: Point, level: Level, line: number) {
+  point.level = level
+  point.levelLine = line
+  point.endLine = Math.max(point.endLine, line)
+}
+
+function addDetail(point: Point, text: string, line: number) {
+  point.details.push(text)
+  point.endLine = Math.max(point.endLine, line)
 }
 
 // "Search destination *" -> text "Search destination", star true
@@ -330,15 +345,15 @@ function addToJourney(section: Section, line: string, indent: number, lineNumber
   const level = levelOf(text, section.title)
   const pain = stage.children[stage.children.length - 1]
   if (pain && indent > painIndent) {
-    if (level) pain.level = level
-    else pain.details.push(text)
+    if (level) setLevel(pain, level, lineNumber)
+    else addDetail(pain, text, lineNumber)
     return painIndent
   }
   if (level) {
-    stage.level = level
+    setLevel(stage, level, lineNumber)
     return painIndent
   }
-  stage.children.push(newPoint(text, lineNumber))
+  stage.children.push(newPoint(text, lineNumber, [], indent))
   return indent
 }
 
@@ -436,7 +451,9 @@ function parseSections(notes: string): Section[] {
 
     // "->" (or the older "-(") answer, highlighted under the point above it.
     if (line.startsWith('->') || line.startsWith('-(')) {
-      const answer = line.slice(2).replace(/\)$/, '').trim()
+      // "-( answer)" may end with a ")" that closes the "-(": drop it only if nothing opened it.
+      let answer = line.slice(2).trim()
+      if (line.startsWith('-(') && answer.endsWith(')') && !answer.includes('(')) answer = answer.slice(0, -1).trim()
       if (answer === '') continue
       if (lastPoint) lastPoint.answers.push(answer)
       else current.points.push(newPoint('', lineNumber, [answer]))
@@ -448,8 +465,8 @@ function parseSections(notes: string): Section[] {
     if (lastPoint && (line.startsWith('--') || (isIndented && (line.startsWith('-') || current.kind === 'list')))) {
       const detail = line.replace(/^-+/, '').trim()
       const level = current.kind === 'list' ? levelOf(detail, current.title) : null
-      if (level) lastPoint.level = level
-      else if (detail !== '') lastPoint.details.push(detail)
+      if (level) setLevel(lastPoint, level, lineNumber)
+      else if (detail !== '') addDetail(lastPoint, detail, lineNumber)
       continue
     }
 

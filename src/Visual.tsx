@@ -5,11 +5,19 @@ import { useState } from 'react'
 import { ChainBody } from './Chain.tsx'
 import { ChartView } from './Charts.tsx'
 import type { Point, Section, Step } from './parse.ts'
-import { Journey, LevelMeter, NorthStar, starLines, type StarHandler } from './Product.tsx'
+import { normalize } from './parse.ts'
+import { Friction, Journey, LevelMeter, NorthStar, starLines, type LevelHandler, type StarHandler } from './Product.tsx'
 
 // A card: the point, its answers, its description (indented lines), its friction or
 // priority, and a star at the end. Long text is cut to two lines; click to read it all.
-function PointCard({ point, group, onStar }: { point: Point; group: number[]; onStar?: StarHandler }) {
+interface CardProps {
+  point: Point
+  group: number[]
+  onStar?: StarHandler
+  onLevel?: LevelHandler // only for pain points: friction I can click
+}
+
+function PointCard({ point, group, onStar, onLevel }: CardProps) {
   const [open, setOpen] = useState(false)
   const canExpand = point.text.length > 90 || point.details.join(' ').length > 140
 
@@ -29,7 +37,11 @@ function PointCard({ point, group, onStar }: { point: Point; group: number[]; on
         {point.details.length > 0 && (
           <span className={open ? 'card-desc' : 'card-desc clamp'}>{point.details.join(' · ')}</span>
         )}
-        {point.level && <LevelMeter level={point.level} />}
+        {onLevel ? (
+          <Friction point={point} insertAfter={point.endLine} onLevel={onLevel} />
+        ) : (
+          point.level && <LevelMeter level={point.level} />
+        )}
       </div>
       {onStar && <NorthStar on={point.star} line={point.line} group={group} onStar={onStar} />}
     </div>
@@ -95,19 +107,46 @@ interface BodyProps {
   section: Section
   showMaths: boolean
   onStar?: StarHandler
+  onLevel?: LevelHandler
 }
 
-function SectionBody({ section, showMaths, onStar }: BodyProps) {
+// Goal and Mission are short statements, so they stay as plain bullets.
+const BULLET_SECTIONS = ['goal', 'goals', 'mission']
+
+function Bullets({ section }: { section: Section }) {
+  return (
+    <ul className="clarify-list">
+      {section.points.map((point) => (
+        <li key={point.line}>
+          <span>
+            {point.star && <span className="bullet-star">★ </span>}
+            {point.text}
+          </span>
+          {point.answers.map((answer, j) => (
+            <mark key={j} className="answer">
+              {answer}
+            </mark>
+          ))}
+          {point.details.length > 0 && <span className="bullet-desc">{point.details.join(' · ')}</span>}
+        </li>
+      ))}
+    </ul>
+  )
+}
+
+function SectionBody({ section, showMaths, onStar, onLevel }: BodyProps) {
   let main = null
   if (section.kind === 'chain') main = <ChainBody section={section} showMaths={showMaths} />
   else if (section.kind === 'clarify') main = <ClarifyList section={section} />
-  else if (section.kind === 'journey') main = <Journey section={section} onStar={onStar} />
+  else if (section.kind === 'journey') main = <Journey section={section} onStar={onStar} onLevel={onLevel} />
+  else if (BULLET_SECTIONS.includes(normalize(section.title))) main = <Bullets section={section} />
   else if (section.points.length > 0) {
     const group = starLines(section)
+    const isPain = normalize(section.title).startsWith('pain')
     main = (
       <div className="point-grid">
         {section.points.map((point) => (
-          <PointCard key={point.line} point={point} group={group} onStar={onStar} />
+          <PointCard key={point.line} point={point} group={group} onStar={onStar} onLevel={isPain ? onLevel : undefined} />
         ))}
       </div>
     )
@@ -127,7 +166,7 @@ function SectionBody({ section, showMaths, onStar }: BodyProps) {
 }
 
 // After --end--: the section folds into one line. Click it to open it again.
-function FoldedSection({ section, showMaths, onStar }: BodyProps) {
+function FoldedSection({ section, showMaths, onStar, onLevel }: BodyProps) {
   const [open, setOpen] = useState(false)
   return (
     <div className={open ? 'folded open' : 'folded'}>
@@ -142,20 +181,20 @@ function FoldedSection({ section, showMaths, onStar }: BodyProps) {
       </button>
       {open && (
         <div className="folded-body">
-          <SectionBody section={section} showMaths={showMaths} onStar={onStar} />
+          <SectionBody section={section} showMaths={showMaths} onStar={onStar} onLevel={onLevel} />
         </div>
       )}
     </div>
   )
 }
 
-function SectionView({ section, showMaths, onStar }: BodyProps) {
-  if (section.ended) return <FoldedSection section={section} showMaths={showMaths} onStar={onStar} />
+function SectionView({ section, showMaths, onStar, onLevel }: BodyProps) {
+  if (section.ended) return <FoldedSection section={section} showMaths={showMaths} onStar={onStar} onLevel={onLevel} />
   return (
     <section className="section">
       <h2>{section.title}</h2>
       {section.note && <p className="section-note">{section.note}</p>}
-      <SectionBody section={section} showMaths={showMaths} onStar={onStar} />
+      <SectionBody section={section} showMaths={showMaths} onStar={onStar} onLevel={onLevel} />
     </section>
   )
 }
@@ -189,9 +228,10 @@ interface VisualProps {
   steps: Step[]
   type: string
   onStar?: StarHandler
+  onLevel?: LevelHandler
 }
 
-export function Visual({ sections, steps, type, onStar }: VisualProps) {
+export function Visual({ sections, steps, type, onStar, onLevel }: VisualProps) {
   // The Structure list lives in the step bar, so it isn't drawn again below.
   const body = sections.filter((s) => s.kind !== 'structure')
   // One Maths box only, next to the latest tree (Chain or Solve).
@@ -209,7 +249,7 @@ export function Visual({ sections, steps, type, onStar }: VisualProps) {
     <div className="visual">
       <StepBar steps={steps} />
       {body.map((section, i) => (
-        <SectionView key={i} section={section} showMaths={section === lastTree} onStar={onStar} />
+        <SectionView key={i} section={section} showMaths={section === lastTree} onStar={onStar} onLevel={onLevel} />
       ))}
     </div>
   )

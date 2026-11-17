@@ -3,6 +3,7 @@ import { NewQuestionDialog } from './NewQuestionDialog.tsx'
 import { parseNotes } from './parse.ts'
 import { loadQuestions, saveQuestions, typeName, type Question } from './questions.ts'
 import { Visual } from './Visual.tsx'
+import type { LevelTarget } from './Product.tsx'
 
 function Logo({ size }: { size: number }) {
   return <img src="./logo.svg" width={size} height={size} alt="" />
@@ -83,6 +84,19 @@ export default function App() {
     const hadStar = /[*★]\s*$/.test(lines[line])
     for (const l of group) if (l < lines.length) lines[l] = lines[l].replace(/\s*[*★]\s*$/, '')
     if (!hadStar) lines[line] = lines[line].replace(/\s+$/, '') + ' *'
+    updateNotes(lines.join('\n'))
+  }
+
+  // Clicking a friction dash: replace the friction line, add one, or (word = null) remove it.
+  function setFriction(target: LevelTarget, word: string | null) {
+    if (!active) return
+    const lines = active.notes.split('\n')
+    if (target.levelLine >= 0 && target.levelLine < lines.length) {
+      if (word === null) lines.splice(target.levelLine, 1)
+      else lines[target.levelLine] = (/^\s*/.exec(lines[target.levelLine])?.[0] ?? '') + word
+    } else if (word !== null) {
+      lines.splice(target.insertAfter + 1, 0, ' '.repeat(target.indent) + word)
+    }
     updateNotes(lines.join('\n'))
   }
 
@@ -190,7 +204,7 @@ export default function App() {
             </section>
           )}
 
-          <Visual sections={sections} steps={steps} type={active.type} onStar={toggleStar} />
+          <Visual sections={sections} steps={steps} type={active.type} onStar={toggleStar} onLevel={setFriction} />
         </main>
       )}
       {dialog}

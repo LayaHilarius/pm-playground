@@ -6,6 +6,49 @@ import type { Level, Point, Section } from './parse.ts'
 // Only one per section: the others in `group` lose theirs.
 export type StarHandler = (line: number, group: number[]) => void
 
+// Clicking a friction dash writes the word into my notes: it replaces the point's
+// friction line, or adds one after `insertAfter`, indented one step deeper.
+export interface LevelTarget {
+  levelLine: number
+  insertAfter: number
+  indent: number
+}
+export type LevelHandler = (target: LevelTarget, word: string | null) => void
+
+const FRICTION_WORDS = ['low', 'moderate', 'high', 'very high']
+
+// Four dashes I can click: dash 1 = low … dash 4 = very high. Clicking the current one clears it.
+export function FrictionPicker({ point, insertAfter, onLevel }: { point: Point; insertAfter: number; onLevel: LevelHandler }) {
+  const rank = point.level?.kind === 'friction' ? point.level.rank : 0
+  const target: LevelTarget = { levelLine: point.levelLine, insertAfter, indent: point.indent + 2 }
+  return (
+    <span className={`friction picker rank-${rank}${rank === 0 ? ' empty' : ''}`} onClick={(e) => e.stopPropagation()}>
+      <span className="dashes">
+        {FRICTION_WORDS.map((word, i) => (
+          <button
+            key={word}
+            type="button"
+            className={i < rank ? 'dash filled' : 'dash'}
+            title={`${word} friction`}
+            aria-label={`${word} friction`}
+            aria-pressed={i + 1 === rank}
+            onClick={() => onLevel(target, i + 1 === rank ? null : word)}
+          />
+        ))}
+      </span>
+      {rank > 0 ? point.level?.label : 'Set friction'}
+    </span>
+  )
+}
+
+// Shows the friction picker when I can click it, otherwise the plain meter.
+function Friction({ point, insertAfter, onLevel }: { point: Point; insertAfter: number; onLevel?: LevelHandler }) {
+  if (onLevel && (!point.level || point.level.kind === 'friction'))
+    return <FrictionPicker point={point} insertAfter={insertAfter} onLevel={onLevel} />
+  return point.level ? <LevelMeter level={point.level} /> : null
+}
+export { Friction }
+
 export function NorthStar({ on, line, group, onStar }: { on: boolean; line: number; group: number[]; onStar?: StarHandler }) {
   return (
     <button
@@ -51,7 +94,7 @@ export function starLines(section: Section): number[] {
   return section.points.flatMap((p) => [p.line, ...p.children.map((c) => c.line)])
 }
 
-function PainItem({ pain, group, onStar }: { pain: Point; group: number[]; onStar?: StarHandler }) {
+function PainItem({ pain, group, onStar, onLevel }: { pain: Point; group: number[]; onStar?: StarHandler; onLevel?: LevelHandler }) {
   return (
     <li className="pain">
       <div className="pain-main">
@@ -61,7 +104,7 @@ function PainItem({ pain, group, onStar }: { pain: Point; group: number[]; onSta
             {d}
           </span>
         ))}
-        {pain.level && <LevelMeter level={pain.level} />}
+        <Friction point={pain} insertAfter={pain.endLine} onLevel={onLevel} />
       </div>
       <NorthStar on={pain.star} line={pain.line} group={group} onStar={onStar} />
     </li>
@@ -69,7 +112,7 @@ function PainItem({ pain, group, onStar }: { pain: Point; group: number[]; onSta
 }
 
 // The journey as numbered stages, top to bottom, with the pain points inside each stage.
-export function Journey({ section, onStar }: { section: Section; onStar?: StarHandler }) {
+export function Journey({ section, onStar, onLevel }: { section: Section; onStar?: StarHandler; onLevel?: LevelHandler }) {
   if (section.points.length === 0) {
     return (
       <p className="chain-hint">
@@ -94,14 +137,14 @@ export function Journey({ section, onStar }: { section: Section; onStar?: StarHa
                   {d}
                 </span>
               ))}
-              {stage.level && <LevelMeter level={stage.level} />}
+              <Friction point={stage} insertAfter={stage.line} onLevel={onLevel} />
             </div>
             <NorthStar on={stage.star} line={stage.line} group={group} onStar={onStar} />
           </div>
           {stage.children.length > 0 && (
             <ul className="pains">
               {stage.children.map((pain) => (
-                <PainItem key={pain.line} pain={pain} group={group} onStar={onStar} />
+                <PainItem key={pain.line} pain={pain} group={group} onStar={onStar} onLevel={onLevel} />
               ))}
             </ul>
           )}

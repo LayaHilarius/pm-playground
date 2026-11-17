@@ -581,3 +581,12 @@ mark.answer {
 @media (max-width: 600px) {
   .pains { margin-left: 0; }
 }
+
+/* Friction I can click */
+.friction.picker .dash { padding: 0; border: 0; cursor: pointer; height: 4px; }
+.friction.picker .dashes { padding: 4px 0; }
+.friction.picker .dash:hover { outline: 2px solid #c9d2e3; outline-offset: 1px; }
+.friction.picker.empty { color: #9aa1ad; font-size: 12px; }
+.friction.picker.empty .dash { background: #eceff3; }
+.bullet-star { color: #d48a00; }
+.bullet-desc { display: block; color: var(--muted); font-size: 14px; }
