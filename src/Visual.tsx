@@ -6,7 +6,7 @@ import { ChainBody } from './Chain.tsx'
 import { ChartView } from './Charts.tsx'
 import type { Point, Section, Step } from './parse.ts'
 import { normalize } from './parse.ts'
-import { Friction, Journey, LevelMeter, NorthStar, starLines, type LevelHandler, type StarHandler } from './Product.tsx'
+import { Friction, Journey, LevelMeter, MetricsPanel, NorthStar, starLines, type LevelHandler, type StarHandler } from './Product.tsx'
 
 // A card: the point, its answers, its description (indented lines), its friction or
 // priority, and a star at the end. Long text is cut to two lines; click to read it all.
@@ -88,6 +88,12 @@ function summaryOf(section: Section): string {
     parts.push(section.points.map((p) => p.text).join(' → '))
     const star = section.points.flatMap((p) => [p, ...p.children]).find((p) => p.star)
     if (star) parts.push(`★ ${star.text}`)
+  } else if (section.kind === 'metrics') {
+    if (section.note) parts.push(section.note)
+    const mark = { north: '★ ', supporting: '↗ ', guardrail: '🛡 ', '': '' }
+    const order = { north: 0, supporting: 1, guardrail: 2, '': 3 }
+    const sorted = [...section.points].sort((a, b) => order[a.group] - order[b.group])
+    parts.push(...sorted.map((p) => mark[p.group] + p.text))
   } else {
     if (section.note) parts.push(section.note)
     // The starred one first.
@@ -139,6 +145,7 @@ function SectionBody({ section, showMaths, onStar, onLevel }: BodyProps) {
   if (section.kind === 'chain') main = <ChainBody section={section} showMaths={showMaths} />
   else if (section.kind === 'clarify') main = <ClarifyList section={section} />
   else if (section.kind === 'journey') main = <Journey section={section} onStar={onStar} onLevel={onLevel} />
+  else if (section.kind === 'metrics') main = <MetricsPanel section={section} />
   else if (BULLET_SECTIONS.includes(normalize(section.title))) main = <Bullets section={section} />
   else if (section.points.length > 0) {
     const group = starLines(section)

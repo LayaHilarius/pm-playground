@@ -590,3 +590,30 @@ mark.answer {
 .friction.picker.empty .dash { background: #eceff3; }
 .bullet-star { color: #d48a00; }
 .bullet-desc { display: block; color: var(--muted); font-size: 14px; }
+
+/* Metrics: north star on top, supporting and guardrails side by side */
+.metrics { display: flex; flex-direction: column; gap: 12px; }
+.metric-north {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 18px 20px;
+  border: 1px solid #f1cf7a;
+  border-radius: 14px;
+  background: linear-gradient(120deg, #fff8e6, #ffffff 70%);
+}
+.metric-north .north-star { padding: 6px; }
+.metric-north .north-star .star-trail { left: 20px; top: 20px; }
+.metric-north-main { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.metric-kicker { font-size: 11px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: #b07300; }
+.metric-north-text { font-size: 20px; font-weight: 700; letter-spacing: -0.01em; }
+.metric-cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; }
+.metric-box { padding: 14px 16px; border: 1px solid var(--border); border-radius: 14px; background: var(--surface); }
+.metric-box h3 { margin: 0 0 8px; font-size: 13px; font-weight: 700; letter-spacing: 0.02em; text-transform: uppercase; }
+.metric-box.supporting { border-top: 3px solid #2a78d6; }
+.metric-box.supporting h3 { color: #1d5fae; }
+.metric-box.guardrail { border-top: 3px solid #e34948; }
+.metric-box.guardrail h3 { color: #b42318; }
+.metric-box ul { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 6px; }
+.metric-text { display: block; font-size: 15px; }
+.metric-desc { display: block; font-size: 13px; color: var(--muted); }

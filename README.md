@@ -97,6 +97,7 @@ Pick **Product sense** in + New. Clarify, Structure, `->` answers, `--end--` and
 | Any other indented line | A description |
 | A line under Pain points, Solutions, Metrics… | A card; indented lines are its description and friction |
 | `P0`–`P3` (or `high`, `low`) indented under a solution | Its priority badge |
+| `Metrics`, then `North star`, `Supporting metrics`, `Guardrails` (each with metrics indented below) | One panel: the north star on top, supporting metrics and guardrails side by side |
 | A line ending in ` *`, or a click on its star | The north star (one per section). Hover it to see it shoot |
 
 ## Where the code is

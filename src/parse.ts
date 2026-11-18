@@ -32,7 +32,7 @@ import { calculate } from './calc.ts'
 //                           and an indented level word is its friction (or priority: P0–P3 under Solutions).
 //   A line ending in " *"   is my north star (or my pick). Clicking a card's star sets it.
 
-export type SectionKind = 'clarify' | 'structure' | 'chain' | 'journey' | 'list'
+export type SectionKind = 'clarify' | 'structure' | 'chain' | 'journey' | 'metrics' | 'list'
 
 export interface TreeNode {
   text: string
@@ -60,11 +60,14 @@ export interface Point {
   levelLine: number // the line holding its friction / priority word, or -1
   endLine: number // its last line (descriptions included), so a new friction line goes after it
   children: Point[] // User journey: the pain points inside a stage
+  group: MetricGroup // Metrics: which box it belongs in
 }
+
+export type MetricGroup = '' | 'north' | 'supporting' | 'guardrail'
 
 function newPoint(text: string, line: number, answers: string[] = [], indent = 0): Point {
   const { text: clean, star } = splitStar(text)
-  return { text: clean, answers, details: [], level: null, star, line, indent, levelLine: -1, endLine: line, children: [] }
+  return { text: clean, answers, details: [], level: null, star, line, indent, levelLine: -1, endLine: line, children: [], group: '' }
 }
 
 // Remembers which line set a point's friction, and that the point now reaches this line.
@@ -221,6 +224,7 @@ function kindOf(title: string): SectionKind {
   // Chain (the formula tree) and Solve (the same tree with numbers) are both drawn as trees.
   if (t === 'chain' || t === 'solve') return 'chain'
   if (t === 'user journey' || t === 'journey') return 'journey'
+  if (t === 'metrics' || t === 'metric') return 'metrics'
   return 'list'
 }
 
@@ -357,6 +361,50 @@ function addToJourney(section: Section, line: string, indent: number, lineNumber
   return indent
 }
 
+// Inside Metrics: "North star", "Supporting metrics", "Guardrails" (with or without ":") start a box.
+// "North star: 90-day retention" puts the metric on the same line.
+const METRIC_GROUP =
+  /^(north\s*star(?:\s*metrics?)?|supporting(?:\s*metrics?|\s*mertics?)?|secondary(?:\s*metrics?)?|guard\s*rails?|gaurd\s*rails?|counter(?:\s*metrics?)?)\s*(?::\s*(.*))?$/i
+
+function metricGroupOf(label: string): MetricGroup {
+  const l = label.toLowerCase()
+  if (l.startsWith('north')) return 'north'
+  if (l.startsWith('supporting') || l.startsWith('secondary')) return 'supporting'
+  return 'guardrail'
+}
+
+interface MetricState {
+  group: MetricGroup
+  itemIndent: number // how far this box's metrics are indented (-1: none yet)
+}
+
+// A line inside Metrics: a box label, a metric in the current box, or (indented deeper) its description.
+function addToMetrics(section: Section, line: string, indent: number, lineNumber: number, state: MetricState): MetricState {
+  const label = METRIC_GROUP.exec(line)
+  if (label) {
+    const group = metricGroupOf(label[1])
+    const rest = (label[2] ?? '').trim()
+    if (rest) {
+      const point = newPoint(rest, lineNumber, [], indent)
+      point.group = group
+      section.points.push(point)
+    }
+    return { group, itemIndent: -1 }
+  }
+  const text = line.replace(/^([-•]|\*\s|\d+[.)])\s*/, '')
+  const last = section.points[section.points.length - 1]
+  if (last && state.itemIndent !== -1 && indent > state.itemIndent && last.group === state.group) {
+    const level = levelOf(text, section.title)
+    if (level) setLevel(last, level, lineNumber)
+    else addDetail(last, text, lineNumber)
+    return state
+  }
+  const point = newPoint(text, lineNumber, [], indent)
+  point.group = state.group
+  section.points.push(point)
+  return { group: state.group, itemIndent: state.itemIndent === -1 ? indent : Math.min(state.itemIndent, indent) }
+}
+
 function parseSections(notes: string): Section[] {
   const sections: Section[] = []
   const stepNames: string[] = []
@@ -366,6 +414,7 @@ function parseSections(notes: string): Section[] {
   let openChart: Chart | null = null
   // User journey: how far the current stage's pain points are indented.
   let painIndent = -1
+  let metricState: MetricState = { group: '', itemIndent: -1 }
 
   const lines = stripComments(notes).split('\n')
   for (let lineNumber = 0; lineNumber < lines.length; lineNumber++) {
@@ -418,8 +467,14 @@ function parseSections(notes: string): Section[] {
     const indent = indentOf(rawLine)
     const inChain: boolean = current !== null && current.kind === 'chain' && !current.ended
     const inJourney: boolean = current !== null && current.kind === 'journey' && !current.ended
+    const inMetrics: boolean = current !== null && current.kind === 'metrics' && !current.ended
+    // "North star" and "Guardrails:" inside Metrics are its boxes, not new sections.
+    if (inMetrics && current && METRIC_GROUP.test(line)) {
+      metricState = addToMetrics(current, line, indent, lineNumber, metricState)
+      continue
+    }
     const heading: { title: string; note: string } | null =
-      (inChain || inJourney) && indent > 0 ? null : headingParts(line, stepNames)
+      (inChain || inJourney || inMetrics) && indent > 0 ? null : headingParts(line, stepNames)
     if (heading !== null) {
       const title: string = heading.title
       const note: string = heading.note
@@ -427,6 +482,12 @@ function parseSections(notes: string): Section[] {
       sections.push(current)
       treeStack = []
       painIndent = -1
+      metricState = { group: '', itemIndent: -1 }
+      continue
+    }
+
+    if (inMetrics && current) {
+      metricState = addToMetrics(current, line, indent, lineNumber, metricState)
       continue
     }
 
@@ -494,7 +555,13 @@ function stepsFrom(sections: Section[]): Step[] {
 
   const lastIndex = sections.length - 1
   return structure.points.map((point) => {
-    const index = sections.findIndex((s) => sameStep(s.title, point.text))
+    let index = sections.findIndex((s) => sameStep(s.title, point.text))
+    // A "Guardrails" step is also covered by a Guardrails box inside Metrics.
+    const box = METRIC_GROUP.exec(point.text)
+    if (index === -1 && box) {
+      const group = metricGroupOf(box[1])
+      index = sections.findIndex((s) => s.kind === 'metrics' && s.points.some((p) => p.group === group))
+    }
     let status: StepStatus = 'todo'
     if (index !== -1) {
       const section = sections[index]

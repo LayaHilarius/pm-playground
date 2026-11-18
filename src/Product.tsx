@@ -153,3 +153,85 @@ export function Journey({ section, onStar, onLevel }: { section: Section; onStar
     </ol>
   )
 }
+
+function MetricItem({ point }: { point: Point }) {
+  return (
+    <li>
+      <span className="metric-text">{point.text}</span>
+      {point.details.length > 0 && <span className="metric-desc">{point.details.join(' · ')}</span>}
+    </li>
+  )
+}
+
+// Metrics as one panel: the north star on top, supporting metrics and guardrails side by side.
+export function MetricsPanel({ section }: { section: Section }) {
+  const north = section.points.filter((p) => p.group === 'north')
+  const supporting = section.points.filter((p) => p.group === 'supporting')
+  const guardrails = section.points.filter((p) => p.group === 'guardrail')
+  const other = section.points.filter((p) => p.group === '')
+
+  if (section.points.length === 0) {
+    return (
+      <p className="chain-hint">
+        Under Metrics, type <b>North star</b>, <b>Supporting metrics</b> and <b>Guardrails</b>, each with its metrics
+        indented below.
+      </p>
+    )
+  }
+  return (
+    <div className="metrics">
+      {north.map((p) => (
+        <div key={p.line} className="metric-north">
+          <span className="north-star on" aria-hidden="true">
+            <span className="star-trail" />
+            <svg viewBox="0 0 24 24" width="28" height="28">
+              <path d="M12 2.8l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 16.8l-5.4 2.9 1-6.1-4.4-4.3 6.1-.9z" />
+            </svg>
+          </span>
+          <div className="metric-north-main">
+            <span className="metric-kicker">North star metric</span>
+            <span className="metric-north-text">{p.text}</span>
+            {p.details.length > 0 && <span className="metric-desc">{p.details.join(' · ')}</span>}
+          </div>
+        </div>
+      ))}
+      {(supporting.length > 0 || guardrails.length > 0) && (
+        <div className="metric-cols">
+          {supporting.length > 0 && (
+            <div className="metric-box supporting">
+              <h3>
+                <span aria-hidden="true">↗</span> Supporting metrics
+              </h3>
+              <ul>
+                {supporting.map((p) => (
+                  <MetricItem key={p.line} point={p} />
+                ))}
+              </ul>
+            </div>
+          )}
+          {guardrails.length > 0 && (
+            <div className="metric-box guardrail">
+              <h3>
+                <span aria-hidden="true">🛡</span> Guardrails
+              </h3>
+              <ul>
+                {guardrails.map((p) => (
+                  <MetricItem key={p.line} point={p} />
+                ))}
+              </ul>
+            </div>
+          )}
+        </div>
+      )}
+      {other.length > 0 && (
+        <div className="metric-box">
+          <ul>
+            {other.map((p) => (
+              <MetricItem key={p.line} point={p} />
+            ))}
+          </ul>
+        </div>
+      )}
+    </div>
+  )
+}
