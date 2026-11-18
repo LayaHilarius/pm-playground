@@ -137,7 +137,7 @@ export function Journey({ section, onStar, onLevel }: { section: Section; onStar
                   {d}
                 </span>
               ))}
-              <Friction point={stage} insertAfter={stage.line} onLevel={onLevel} />
+              {stage.level && <LevelMeter level={stage.level} />}
             </div>
             <NorthStar on={stage.star} line={stage.line} group={group} onStar={onStar} />
           </div>
