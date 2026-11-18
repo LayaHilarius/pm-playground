@@ -9,7 +9,7 @@ export interface QuestionType {
 // A type becomes "ready" the week I learn it.
 export const QUESTION_TYPES: QuestionType[] = [
   { id: 'guesstimate', name: 'Guesstimate', ready: true },
-  { id: 'product-sense', name: 'Product sense', ready: false },
+  { id: 'product-sense', name: 'Product sense', ready: true },
   { id: 'metrics', name: 'Metrics', ready: false },
   { id: 'root-cause', name: 'Root cause', ready: false },
 ]

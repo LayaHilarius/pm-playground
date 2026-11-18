@@ -5,34 +5,46 @@ import { useState } from 'react'
 import { ChainBody } from './Chain.tsx'
 import { ChartView } from './Charts.tsx'
 import type { Point, Section, Step } from './parse.ts'
+import { normalize } from './parse.ts'
+import { Friction, Journey, LevelMeter, NorthStar, starLines, type LevelHandler, type StarHandler } from './Product.tsx'
 
-function PointCard({ point }: { point: Point }) {
+// A card: the point, its answers, its description (indented lines), its friction or
+// priority, and a star at the end. Long text is cut to two lines; click to read it all.
+interface CardProps {
+  point: Point
+  group: number[]
+  onStar?: StarHandler
+  onLevel?: LevelHandler // only for pain points: friction I can click
+}
+
+function PointCard({ point, group, onStar, onLevel }: CardProps) {
   const [open, setOpen] = useState(false)
-  const canExpand = point.details.length > 0 || point.text.length > 90
+  const canExpand = point.text.length > 90 || point.details.join(' ').length > 140
 
-  const body = (
-    <>
-      {point.text && <span className={open ? 'card-text' : 'card-text clamp'}>{point.text}</span>}
-      {point.answers.map((answer, i) => (
-        <mark key={i} className="answer">
-          {answer}
-        </mark>
-      ))}
-      {open && point.details.length > 0 && (
-        <ul className="card-details">
-          {point.details.map((detail, i) => (
-            <li key={i}>{detail}</li>
-          ))}
-        </ul>
-      )}
-    </>
-  )
-
-  if (!canExpand) return <div className="card">{body}</div>
   return (
-    <button type="button" className={open ? 'card open' : 'card'} onClick={() => setOpen(!open)} aria-expanded={open}>
-      {body}
-    </button>
+    <div className={`card${open ? ' open' : ''}${point.star ? ' starred' : ''}`}>
+      <div
+        className={canExpand ? 'card-main clickable' : 'card-main'}
+        onClick={canExpand ? () => setOpen(!open) : undefined}
+        aria-expanded={canExpand ? open : undefined}
+      >
+        {point.text && <span className={open ? 'card-text' : 'card-text clamp'}>{point.text}</span>}
+        {point.answers.map((answer, i) => (
+          <mark key={i} className="answer">
+            {answer}
+          </mark>
+        ))}
+        {point.details.length > 0 && (
+          <span className={open ? 'card-desc' : 'card-desc clamp'}>{point.details.join(' · ')}</span>
+        )}
+        {onLevel ? (
+          <Friction point={point} insertAfter={point.endLine} onLevel={onLevel} />
+        ) : (
+          point.level && <LevelMeter level={point.level} />
+        )}
+      </div>
+      {onStar && <NorthStar on={point.star} line={point.line} group={group} onStar={onStar} />}
+    </div>
   )
 }
 
@@ -71,9 +83,16 @@ function summaryOf(section: Section): string {
         parts.push(`${root.text}: ${root.children.map((c) => c.text).join(' + ')}`)
       else if (!section.note) parts.push(root.text)
     }
+  } else if (section.kind === 'journey') {
+    if (section.note) parts.push(section.note)
+    parts.push(section.points.map((p) => p.text).join(' → '))
+    const star = section.points.flatMap((p) => [p, ...p.children]).find((p) => p.star)
+    if (star) parts.push(`★ ${star.text}`)
   } else {
     if (section.note) parts.push(section.note)
-    parts.push(...section.points.map((p) => p.text))
+    // The starred one first.
+    const sorted = [...section.points].sort((a, b) => Number(b.star) - Number(a.star))
+    parts.push(...sorted.map((p) => (p.star ? `★ ${p.text}` : p.text)))
   }
   // Charts add their items: "Blue collar 30% · White collar 40%"
   for (const chart of section.charts) {
@@ -84,18 +103,54 @@ function summaryOf(section: Section): string {
 }
 
 // What a section looks like while I'm typing in it (or after I unfold it).
-function SectionBody({ section, showMaths }: { section: Section; showMaths: boolean }) {
+interface BodyProps {
+  section: Section
+  showMaths: boolean
+  onStar?: StarHandler
+  onLevel?: LevelHandler
+}
+
+// Goal and Mission are short statements, so they stay as plain bullets.
+const BULLET_SECTIONS = ['goal', 'goals', 'mission']
+
+function Bullets({ section }: { section: Section }) {
+  return (
+    <ul className="clarify-list">
+      {section.points.map((point) => (
+        <li key={point.line}>
+          <span>
+            {point.star && <span className="bullet-star">★ </span>}
+            {point.text}
+          </span>
+          {point.answers.map((answer, j) => (
+            <mark key={j} className="answer">
+              {answer}
+            </mark>
+          ))}
+          {point.details.length > 0 && <span className="bullet-desc">{point.details.join(' · ')}</span>}
+        </li>
+      ))}
+    </ul>
+  )
+}
+
+function SectionBody({ section, showMaths, onStar, onLevel }: BodyProps) {
   let main = null
   if (section.kind === 'chain') main = <ChainBody section={section} showMaths={showMaths} />
   else if (section.kind === 'clarify') main = <ClarifyList section={section} />
-  else if (section.points.length > 0)
+  else if (section.kind === 'journey') main = <Journey section={section} onStar={onStar} onLevel={onLevel} />
+  else if (BULLET_SECTIONS.includes(normalize(section.title))) main = <Bullets section={section} />
+  else if (section.points.length > 0) {
+    const group = starLines(section)
+    const isPain = normalize(section.title).startsWith('pain')
     main = (
       <div className="point-grid">
-        {section.points.map((point, i) => (
-          <PointCard key={i} point={point} />
+        {section.points.map((point) => (
+          <PointCard key={point.line} point={point} group={group} onStar={onStar} onLevel={isPain ? onLevel : undefined} />
         ))}
       </div>
     )
+  }
   return (
     <>
       {main}
@@ -111,7 +166,7 @@ function SectionBody({ section, showMaths }: { section: Section; showMaths: bool
 }
 
 // After --end--: the section folds into one line. Click it to open it again.
-function FoldedSection({ section, showMaths }: { section: Section; showMaths: boolean }) {
+function FoldedSection({ section, showMaths, onStar, onLevel }: BodyProps) {
   const [open, setOpen] = useState(false)
   return (
     <div className={open ? 'folded open' : 'folded'}>
@@ -126,20 +181,20 @@ function FoldedSection({ section, showMaths }: { section: Section; showMaths: bo
       </button>
       {open && (
         <div className="folded-body">
-          <SectionBody section={section} showMaths={showMaths} />
+          <SectionBody section={section} showMaths={showMaths} onStar={onStar} onLevel={onLevel} />
         </div>
       )}
     </div>
   )
 }
 
-function SectionView({ section, showMaths }: { section: Section; showMaths: boolean }) {
-  if (section.ended) return <FoldedSection section={section} showMaths={showMaths} />
+function SectionView({ section, showMaths, onStar, onLevel }: BodyProps) {
+  if (section.ended) return <FoldedSection section={section} showMaths={showMaths} onStar={onStar} onLevel={onLevel} />
   return (
     <section className="section">
       <h2>{section.title}</h2>
       {section.note && <p className="section-note">{section.note}</p>}
-      <SectionBody section={section} showMaths={showMaths} />
+      <SectionBody section={section} showMaths={showMaths} onStar={onStar} onLevel={onLevel} />
     </section>
   )
 }
@@ -163,7 +218,20 @@ export function StepBar({ steps }: { steps: Step[] }) {
   )
 }
 
-export function Visual({ sections, steps }: { sections: Section[]; steps: Step[] }) {
+const EXAMPLES: Record<string, string> = {
+  guesstimate: `Clarify\nNew cars only, or used too?\n-> New only\n--end--\n\nStructure\nClarify\nChain\nSegment\n--end--`,
+  'product-sense': `Structure\nClarify\nGoal\nUsers\nUser journey\nPain points\nSolutions\nMetrics\n--end--\n\nUser journey\nSearch destination\n  Too many results\n    high\nFollow directions *\n  Lost at junctions\n    very high`,
+}
+
+interface VisualProps {
+  sections: Section[]
+  steps: Step[]
+  type: string
+  onStar?: StarHandler
+  onLevel?: LevelHandler
+}
+
+export function Visual({ sections, steps, type, onStar, onLevel }: VisualProps) {
   // The Structure list lives in the step bar, so it isn't drawn again below.
   const body = sections.filter((s) => s.kind !== 'structure')
   // One Maths box only, next to the latest tree (Chain or Solve).
@@ -173,7 +241,7 @@ export function Visual({ sections, steps }: { sections: Section[]; steps: Step[]
     return (
       <div className="visual-empty">
         <p>Start typing on the left. Try:</p>
-        <pre>{`Clarify\nNew cars only, or used too?\n-> New only\n--end--\n\nStructure\nClarify\nChain\nSegment\n--end--`}</pre>
+        <pre>{EXAMPLES[type] ?? EXAMPLES.guesstimate}</pre>
       </div>
     )
   }
@@ -181,7 +249,7 @@ export function Visual({ sections, steps }: { sections: Section[]; steps: Step[]
     <div className="visual">
       <StepBar steps={steps} />
       {body.map((section, i) => (
-        <SectionView key={i} section={section} showMaths={section === lastTree} />
+        <SectionView key={i} section={section} showMaths={section === lastTree} onStar={onStar} onLevel={onLevel} />
       ))}
     </div>
   )

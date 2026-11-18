@@ -3,6 +3,7 @@ import { NewQuestionDialog } from './NewQuestionDialog.tsx'
 import { parseNotes } from './parse.ts'
 import { loadQuestions, saveQuestions, typeName, type Question } from './questions.ts'
 import { Visual } from './Visual.tsx'
+import type { LevelTarget } from './Product.tsx'
 
 function Logo({ size }: { size: number }) {
   return <img src="./logo.svg" width={size} height={size} alt="" />
@@ -11,12 +12,21 @@ function Logo({ size }: { size: number }) {
 // Tab indents by 2 spaces instead of leaving the box. With several lines selected, every
 // selected line moves in one step. Shift+Tab moves them back out.
 // Edits go through insertText (the browser's own typing), so Cmd+Z still undoes them.
+// Types text over the selection the way the browser does, so Cmd+Z still works.
+// If the browser refuses, change the text directly and tell React about it.
+function replaceSelection(box: HTMLTextAreaElement, text: string) {
+  box.focus()
+  if (document.execCommand('insertText', false, text)) return
+  box.setRangeText(text, box.selectionStart, box.selectionEnd, 'end')
+  box.dispatchEvent(new Event('input', { bubbles: true }))
+}
+
 function indentWithTab(box: HTMLTextAreaElement, outdent: boolean) {
   const { selectionStart: start, selectionEnd: end, value } = box
   const multiLine = value.slice(start, end).includes('\n')
 
   if (!multiLine && !outdent) {
-    document.execCommand('insertText', false, '  ')
+    replaceSelection(box, '  ')
     return
   }
 
@@ -28,7 +38,7 @@ function indentWithTab(box: HTMLTextAreaElement, outdent: boolean) {
   const changed = lines.map((line) => (outdent ? line.replace(/^ {1,2}|^\t/, '') : '  ' + line)).join('\n')
 
   box.setSelectionRange(blockStart, blockEnd)
-  document.execCommand('insertText', false, changed)
+  replaceSelection(box, changed)
   if (multiLine) box.setSelectionRange(blockStart, blockStart + changed.length)
   else {
     // One line moved out: keep the cursor where it was in the text.
@@ -63,6 +73,31 @@ export default function App() {
 
   function updateNotes(notes: string) {
     setQuestions(questions.map((q) => (q.id === activeId ? { ...q, notes } : q)))
+  }
+
+  // Clicking a star: that line becomes the north star (" *" at its end), the rest of the
+  // section loses theirs. Clicking the north star again takes it away.
+  function toggleStar(line: number, group: number[]) {
+    if (!active) return
+    const lines = active.notes.split('\n')
+    if (line >= lines.length) return
+    const hadStar = /[*★]\s*$/.test(lines[line])
+    for (const l of group) if (l < lines.length) lines[l] = lines[l].replace(/\s*[*★]\s*$/, '')
+    if (!hadStar) lines[line] = lines[line].replace(/\s+$/, '') + ' *'
+    updateNotes(lines.join('\n'))
+  }
+
+  // Clicking a friction dash: replace the friction line, add one, or (word = null) remove it.
+  function setFriction(target: LevelTarget, word: string | null) {
+    if (!active) return
+    const lines = active.notes.split('\n')
+    if (target.levelLine >= 0 && target.levelLine < lines.length) {
+      if (word === null) lines.splice(target.levelLine, 1)
+      else lines[target.levelLine] = (/^\s*/.exec(lines[target.levelLine])?.[0] ?? '') + word
+    } else if (word !== null) {
+      lines.splice(target.insertAfter + 1, 0, ' '.repeat(target.indent) + word)
+    }
+    updateNotes(lines.join('\n'))
   }
 
   function deleteQuestion(id: string) {
@@ -145,7 +180,11 @@ export default function App() {
                   e.preventDefault()
                   indentWithTab(e.currentTarget, e.shiftKey)
                 }}
-                placeholder={'Clarify\nIs this new cars only?\n-> Yes, new cars only\n--end--'}
+                placeholder={
+                  active.type === 'product-sense'
+                    ? 'Clarify\nWhich part of Maps?\n-> Navigation\n--end--'
+                    : 'Clarify\nIs this new cars only?\n-> Yes, new cars only\n--end--'
+                }
                 spellCheck={false}
                 autoFocus
               />
@@ -153,11 +192,19 @@ export default function App() {
                 <b>Clarify</b> starts a section · <b>-&gt;</b> answer · <b>--end--</b> closes it ·{' '}
                 <b>Structure</b> then one step per line, closed with <b>--end--</b>, makes the step bar ·{' '}
                 <b>--pie--</b> / <b>--bar--</b> / <b>--table--</b> with <b>key,value</b> lines, closed with <b>--end--</b>
+                {active.type === 'product-sense' && (
+                  <>
+                    {' '}
+                    · <b>User journey</b>: a stage per line, indent for its pain points, indent again for friction (
+                    <b>low</b>, <b>moderate</b>, <b>high</b>, <b>very high</b>) · indented lines are descriptions ·{' '}
+                    <b>P0</b>–<b>P3</b> under Solutions · end a line with <b>*</b> (or click its star) for the north star
+                  </>
+                )}
               </p>
             </section>
           )}
 
-          <Visual sections={sections} steps={steps} />
+          <Visual sections={sections} steps={steps} type={active.type} onStar={toggleStar} onLevel={setFriction} />
         </main>
       )}
       {dialog}

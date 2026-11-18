@@ -21,8 +21,18 @@ import { calculate } from './calc.ts'
 //   Paint cans (17Cr)       an unindented line is the top of a tree; "(...)" at the end is its number
 //     Houses (87M)          indent with 2 spaces (or a tab) to make a branch
 //     F: houses × cans / 10 an "F:" line is the formula of the box above, shown on top of it
+//
+// Product sense:
+//   User journey            each unindented line is a stage, numbered 1, 2, 3
+//   Search destination      a stage
+//     Too many results      indented under a stage: a pain point inside that stage
+//       high                indented under a pain point: its friction (low, moderate, high, very high)
+//       people give up      any other indented line: a description
+//   Pain points / Solutions / Metrics: a line is a card, an indented line is its description,
+//                           and an indented level word is its friction (or priority: P0–P3 under Solutions).
+//   A line ending in " *"   is my north star (or my pick). Clicking a card's star sets it.
 
-export type SectionKind = 'clarify' | 'structure' | 'chain' | 'list'
+export type SectionKind = 'clarify' | 'structure' | 'chain' | 'journey' | 'list'
 
 export interface TreeNode {
   text: string
@@ -32,10 +42,65 @@ export interface TreeNode {
   children: TreeNode[]
 }
 
+// How bad a pain point is (friction) or how important a solution is (priority). Rank 1–4.
+export interface Level {
+  kind: 'friction' | 'priority'
+  rank: number
+  label: string
+}
+
 export interface Point {
   text: string
   answers: string[]
   details: string[]
+  level: Level | null
+  star: boolean // the line ends with " *": my north star, or my pick
+  line: number // which line of my notes it came from, so clicking the star can write " *" back
+  indent: number // how far that line is indented
+  levelLine: number // the line holding its friction / priority word, or -1
+  endLine: number // its last line (descriptions included), so a new friction line goes after it
+  children: Point[] // User journey: the pain points inside a stage
+}
+
+function newPoint(text: string, line: number, answers: string[] = [], indent = 0): Point {
+  const { text: clean, star } = splitStar(text)
+  return { text: clean, answers, details: [], level: null, star, line, indent, levelLine: -1, endLine: line, children: [] }
+}
+
+// Remembers which line set a point's friction, and that the point now reaches this line.
+function setLevel(point: Point, level: Level, line: number) {
+  point.level = level
+  point.levelLine = line
+  point.endLine = Math.max(point.endLine, line)
+}
+
+function addDetail(point: Point, text: string, line: number) {
+  point.details.push(text)
+  point.endLine = Math.max(point.endLine, line)
+}
+
+// "Search destination *" -> text "Search destination", star true
+export function splitStar(text: string): { text: string; star: boolean } {
+  const match = /^(.*?)\s*[*★]$/.exec(text)
+  if (!match || match[1].trim() === '') return { text, star: false }
+  return { text: match[1], star: true }
+}
+
+const LEVEL_WORD =
+  /^(?:(friction|priority)\s*[:-]?\s*)?(very\s+high|high|moderate|medium|low|p[0-3])(?:\s+(friction|priority))?\.?$/i
+
+// "high", "very high friction", "priority: low", "P1" -> a Level. Anything else -> null.
+export function levelOf(text: string, sectionTitle: string): Level | null {
+  const match = LEVEL_WORD.exec(text.trim())
+  if (!match) return null
+  const word = match[2].toLowerCase().replace(/\s+/, ' ')
+  const named = (match[1] ?? match[3] ?? '').toLowerCase()
+  const isP = /^p[0-3]$/.test(word)
+  const kind: Level['kind'] =
+    isP || named === 'priority' || (named === '' && normalize(sectionTitle).startsWith('solution')) ? 'priority' : 'friction'
+  if (isP) return { kind, rank: 4 - Number(word[1]), label: word.toUpperCase() }
+  const rank = { low: 1, moderate: 2, medium: 2, high: 3, 'very high': 4 }[word] ?? 2
+  return { kind, rank, label: `${capitalize(word)} ${kind}` }
 }
 
 export type ChartType = 'pie' | 'bar' | 'table'
@@ -93,6 +158,29 @@ const KNOWN_HEADINGS = [
   'summary',
   'answer',
   'final answer',
+  // Product sense
+  'goal',
+  'goals',
+  'mission',
+  'user',
+  'users',
+  'user segments',
+  'user journey',
+  'journey',
+  'pain point',
+  'pain points',
+  'solution',
+  'solutions',
+  'metric',
+  'metrics',
+  'north star',
+  'guardrail',
+  'guardrails',
+  'tradeoff',
+  'tradeoffs',
+  'trade-offs',
+  'trade offs',
+  'prioritization',
 ]
 
 const STRUCTURE_HEADINGS = ['structure', 'approach', 'framework']
@@ -132,6 +220,7 @@ function kindOf(title: string): SectionKind {
   if (STRUCTURE_HEADINGS.includes(t)) return 'structure'
   // Chain (the formula tree) and Solve (the same tree with numbers) are both drawn as trees.
   if (t === 'chain' || t === 'solve') return 'chain'
+  if (t === 'user journey' || t === 'journey') return 'journey'
   return 'list'
 }
 
@@ -244,6 +333,30 @@ function addToTree(
   stack.push({ indent, node })
 }
 
+// User journey: unindented = a stage; indented once = a pain point in that stage;
+// indented under a pain point = its friction or description. Returns the pain points' indent.
+function addToJourney(section: Section, line: string, indent: number, lineNumber: number, painIndent: number): number {
+  const text = line.replace(/^([-•]|\*\s|\d+[.)])\s*/, '')
+  const stage = section.points[section.points.length - 1]
+  if (indent === 0 || !stage) {
+    section.points.push(newPoint(text, lineNumber))
+    return -1
+  }
+  const level = levelOf(text, section.title)
+  const pain = stage.children[stage.children.length - 1]
+  if (pain && indent > painIndent) {
+    if (level) setLevel(pain, level, lineNumber)
+    else addDetail(pain, text, lineNumber)
+    return painIndent
+  }
+  if (level) {
+    setLevel(stage, level, lineNumber)
+    return painIndent
+  }
+  stage.children.push(newPoint(text, lineNumber, [], indent))
+  return indent
+}
+
 function parseSections(notes: string): Section[] {
   const sections: Section[] = []
   const stepNames: string[] = []
@@ -251,6 +364,8 @@ function parseSections(notes: string): Section[] {
   // Open boxes of the Chain tree, with how far each one is indented.
   let treeStack: { indent: number; node: TreeNode }[] = []
   let openChart: Chart | null = null
+  // User journey: how far the current stage's pain points are indented.
+  let painIndent = -1
 
   const lines = stripComments(notes).split('\n')
   for (let lineNumber = 0; lineNumber < lines.length; lineNumber++) {
@@ -294,21 +409,29 @@ function parseSections(notes: string): Section[] {
     const inStructure = current !== null && current.kind === 'structure' && !current.ended
     if (inStructure && current) {
       const text = line.replace(/^([-*•]|\d+[.)])\s*/, '')
-      current.points.push({ text, answers: [], details: [] })
+      current.points.push(newPoint(text, lineNumber))
       stepNames.push(normalize(text))
       continue
     }
 
-    // Inside Chain, an indented line is always a box, even if it is called "Segment".
+    // Inside Chain or User journey, an indented line is always a box, even if it is called "Segment".
     const indent = indentOf(rawLine)
     const inChain: boolean = current !== null && current.kind === 'chain' && !current.ended
-    const heading: { title: string; note: string } | null = inChain && indent > 0 ? null : headingParts(line, stepNames)
+    const inJourney: boolean = current !== null && current.kind === 'journey' && !current.ended
+    const heading: { title: string; note: string } | null =
+      (inChain || inJourney) && indent > 0 ? null : headingParts(line, stepNames)
     if (heading !== null) {
       const title: string = heading.title
       const note: string = heading.note
       current = { title: capitalize(title), note, kind: kindOf(title), points: [], tree: [], charts: [], ended: false }
       sections.push(current)
       treeStack = []
+      painIndent = -1
+      continue
+    }
+
+    if (inJourney && current) {
+      painIndent = addToJourney(current, line, indent, lineNumber, painIndent)
       continue
     }
 
@@ -328,24 +451,28 @@ function parseSections(notes: string): Section[] {
 
     // "->" (or the older "-(") answer, highlighted under the point above it.
     if (line.startsWith('->') || line.startsWith('-(')) {
-      const answer = line.slice(2).replace(/\)$/, '').trim()
+      // "-( answer)" may end with a ")" that closes the "-(": drop it only if nothing opened it.
+      let answer = line.slice(2).trim()
+      if (line.startsWith('-(') && answer.endsWith(')') && !answer.includes('(')) answer = answer.slice(0, -1).trim()
       if (answer === '') continue
       if (lastPoint) lastPoint.answers.push(answer)
-      else current.points.push({ text: '', answers: [answer], details: [] })
+      else current.points.push(newPoint('', lineNumber, [answer]))
       continue
     }
 
-    // Indented "-" or "--": a detail of the point above.
-    const isIndented = /^(\s{2,}|\t)/.test(rawLine)
-    if (lastPoint && (line.startsWith('--') || (isIndented && line.startsWith('-')))) {
+    // Indented (or "--"): the description of the point above, or its friction / priority.
+    const isIndented = indent > 0
+    if (lastPoint && (line.startsWith('--') || (isIndented && (line.startsWith('-') || current.kind === 'list')))) {
       const detail = line.replace(/^-+/, '').trim()
-      if (detail !== '') lastPoint.details.push(detail)
+      const level = current.kind === 'list' ? levelOf(detail, current.title) : null
+      if (level) setLevel(lastPoint, level, lineNumber)
+      else if (detail !== '') addDetail(lastPoint, detail, lineNumber)
       continue
     }
 
     // Anything else is a new point. Strip "- ", "* " or "1. " from the front.
-    const text = line.replace(/^([-*•]|\d+[.)])\s*/, '')
-    current.points.push({ text, answers: [], details: [] })
+    const text = line.replace(/^([-•]|\*\s|\d+[.)])\s*/, '')
+    current.points.push(newPoint(text, lineNumber))
   }
 
   return sections
@@ -355,13 +482,19 @@ function parseSections(notes: string): Section[] {
 //   done    when I closed it with --end--, or moved on to a later section
 //   current when it's the section I'm typing in now
 //   todo    when I haven't opened it yet
+// "Pain points" in Structure opens with "Pain point" too.
+function sameStep(a: string, b: string): boolean {
+  const key = (t: string) => normalize(t).replace(/s$/, '')
+  return key(a) === key(b)
+}
+
 function stepsFrom(sections: Section[]): Step[] {
   const structure = sections.find((s) => s.kind === 'structure')
   if (!structure) return []
 
   const lastIndex = sections.length - 1
   return structure.points.map((point) => {
-    const index = sections.findIndex((s) => normalize(s.title) === normalize(point.text))
+    const index = sections.findIndex((s) => sameStep(s.title, point.text))
     let status: StepStatus = 'todo'
     if (index !== -1) {
       const section = sections[index]
