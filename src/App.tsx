@@ -101,12 +101,12 @@ export default function App() {
     updateNotes(lines.join('\n'))
   }
 
-  // Clicking Funnel / Table above a table: rewrite its --table-- / --funnel-- line.
+  // Clicking Table / Bar / Funnel above a table: rewrite its --table-- / --bar-- / --funnel-- line.
   function setChartType(line: number, type: ChartType) {
     if (!active) return
     const lines = active.notes.split('\n')
     if (line >= lines.length) return
-    lines[line] = lines[line].replace(/--(table|funnel)--/i, `--${type}--`)
+    lines[line] = lines[line].replace(/--(table|bar|funnel)--/i, `--${type}--`)
     updateNotes(lines.join('\n'))
   }
 
@@ -215,8 +215,8 @@ export default function App() {
                 {active.type === 'root-cause' && (
                   <>
                     {' '}
-                    · a <b>--table--</b> like <b>Step,Before,After</b> gets a <b>Funnel</b> button that draws each number
-                    column as a funnel and shows where people drop
+                    · a <b>--table--</b> like <b>Step,Before,After</b> gets a <b>Table / Bar / Funnel</b> switch: Bar puts the
+                    columns side by side, Funnel shows where people drop
                   </>
                 )}
               </p>

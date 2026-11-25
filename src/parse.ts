@@ -306,6 +306,8 @@ function addToChart(chart: Chart, line: string) {
     chart.rows.push(line.split(',').map((cell) => cell.trim()))
     return
   }
+  // A --bar-- block can also be a whole table (Step,Before,After): keep its rows too.
+  if (chart.type === 'bar' && !line.startsWith('->')) chart.rows.push(line.split(',').map((cell) => cell.trim()))
   const last = chart.items[chart.items.length - 1]
   if (line.startsWith('->') && last) {
     last.note = line.slice(2).trim()

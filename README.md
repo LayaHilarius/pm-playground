@@ -106,7 +106,8 @@ Pick **Root cause** in + New. Everything above works here too. The headings it k
 
 | I type | It draws |
 | --- | --- |
-| `--table--`, then `Step,Before,After` and one step per line, closed with `--end--` | A table with a **Table / Funnel** switch above it |
+| `--table--`, then `Step,Before,After` and one step per line, closed with `--end--` | A table with a **Table / Bar / Funnel** switch above it |
+| A click on **Bar** | One group of bars per step, one bar per column (Before next to After), with a legend. (It writes `--bar--`.) |
 | A click on **Funnel** | Each number column becomes a funnel, side by side, with the % kept and dropped at each step. With two columns or more, the step that changed most is marked in red. (It writes `--funnel--` into my notes; **Table** switches back.) |
 
 ## Where the code is

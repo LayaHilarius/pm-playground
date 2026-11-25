@@ -666,3 +666,19 @@ mark.answer {
 @media (prefers-reduced-motion: reduce) {
   .funnel-bar { transition: none; }
 }
+
+/* A table drawn as grouped bars: one group per step, Before next to After. */
+.grouped-chart { width: 100%; }
+.groups { display: flex; align-items: stretch; gap: 14px; overflow-x: auto; padding-bottom: 4px; }
+.group { flex: 1 1 0; min-width: 60px; display: flex; flex-direction: column; align-items: center; gap: 8px; }
+.group-bars { display: flex; align-items: flex-end; justify-content: center; gap: 4px; height: 220px; width: 100%; }
+.gbar-col { flex: 1 1 0; max-width: 56px; height: 100%; box-sizing: border-box; padding-top: 22px; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; gap: 4px; }
+.gbar { display: block; width: 100%; border-radius: 6px 6px 0 0; transition: height 0.3s ease; }
+.gbar-value { font-size: 12px; font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.group-label { font-size: 13px; font-weight: 600; text-align: center; }
+.legend-row { flex-direction: row; flex-wrap: wrap; justify-content: center; gap: 16px; margin-top: 14px; }
+.legend-row li { align-items: center; }
+.legend-row .swatch { margin-top: 0; }
+@media (prefers-reduced-motion: reduce) {
+  .gbar { transition: none; }
+}

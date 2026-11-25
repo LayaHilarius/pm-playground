@@ -274,39 +274,102 @@ function FunnelChart({ rows }: { rows: string[][] }) {
   )
 }
 
-// A table with numbers gets a Funnel button; a funnel gets a Table button to go back.
+// A --bar-- block written as a table (a header row, or 3+ columns) is drawn as grouped bars.
+function isTableShaped(chart: Chart): boolean {
+  const rows = chart.rows
+  if (rows.length < 2) return false
+  if (rows[0].length >= 3) return true
+  return numberOf(rows[0][1] ?? '') === null && rows.slice(1).some((r) => numberOf(r[1] ?? '') !== null)
+}
+
+// "125000" -> "125K" so labels fit above thin bars. Values I typed with a unit ("10M", "45%") stay as typed.
+function compact(cell: string, value: number | null): string {
+  if (value === null || /[a-z%]/i.test(cell)) return cell
+  return new Intl.NumberFormat('en', { notation: 'compact', maximumFractionDigits: 1 }).format(value)
+}
+
+// One group of bars per step, one bar per number column (Before, After), side by side.
+function GroupedBars({ rows }: { rows: string[][] }) {
+  const columns = numberColumns(rows)
+  const [head, ...body] = rows
+  const values = body.map((row) => columns.map((c) => numberOf(row[c] ?? '')))
+  const max = Math.max(0, ...values.flat().map((v) => v ?? 0))
+  return (
+    <figure className="chart grouped-chart">
+      <div className="groups" role="img" aria-label="Bar chart">
+        {body.map((row, r) => (
+          <div key={r} className="group">
+            <div className="group-bars">
+              {columns.map((c, i) => {
+                const v = values[r][i]
+                const height = max > 0 && v !== null ? Math.max(2, (v / max) * 100) : 0
+                return (
+                  <div key={c} className="gbar-col" title={`${row[0]} · ${head[c] ?? ''}: ${row[c] ?? ''}`}>
+                    <span className="gbar-value">{compact(row[c] ?? '', v)}</span>
+                    <span className="gbar" style={{ height: `${height}%`, background: colorAt(i) }} />
+                  </div>
+                )
+              })}
+            </div>
+            <span className="group-label">{row[0]}</span>
+          </div>
+        ))}
+      </div>
+      {columns.length > 1 && (
+        <ul className="legend legend-row">
+          {columns.map((c, i) => (
+            <li key={c}>
+              <span className="swatch" style={{ background: colorAt(i) }} aria-hidden="true" />
+              <span className="legend-label">{head[c]}</span>
+            </li>
+          ))}
+        </ul>
+      )}
+    </figure>
+  )
+}
+
+const VIEWS: { type: ChartType; name: string }[] = [
+  { type: 'table', name: 'Table' },
+  { type: 'bar', name: 'Bar' },
+  { type: 'funnel', name: 'Funnel' },
+]
+
+// A table with numbers gets a Table / Bar / Funnel switch. Each click rewrites the marker in my notes.
 function Switchable({ chart, onChartType }: { chart: Chart; onChartType?: ChartTypeHandler }) {
-  const canFunnel = chart.rows.length >= 3 && numberColumns(chart.rows).length > 0
-  const isFunnel = chart.type === 'funnel' && canFunnel
+  const canSwitch = chart.rows.length >= 2 && numberColumns(chart.rows).length > 0
+  const view: ChartType = canSwitch ? chart.type : 'table'
   return (
     <div className="switchable">
-      {onChartType && canFunnel && (
+      {onChartType && canSwitch && (
         <div className="chart-switch" role="group" aria-label="Show as">
-          <button
-            type="button"
-            className={isFunnel ? '' : 'on'}
-            aria-pressed={!isFunnel}
-            onClick={() => onChartType(chart.line, 'table')}
-          >
-            Table
-          </button>
-          <button
-            type="button"
-            className={isFunnel ? 'on' : ''}
-            aria-pressed={isFunnel}
-            onClick={() => onChartType(chart.line, 'funnel')}
-          >
-            Funnel
-          </button>
+          {VIEWS.map((v) => (
+            <button
+              key={v.type}
+              type="button"
+              className={view === v.type ? 'on' : ''}
+              aria-pressed={view === v.type}
+              onClick={() => onChartType(chart.line, v.type)}
+            >
+              {v.name}
+            </button>
+          ))}
         </div>
       )}
-      {isFunnel ? <FunnelChart rows={chart.rows} /> : <TableChart rows={chart.rows} />}
+      {view === 'funnel' ? (
+        <FunnelChart rows={chart.rows} />
+      ) : view === 'bar' ? (
+        <GroupedBars rows={chart.rows} />
+      ) : (
+        <TableChart rows={chart.rows} />
+      )}
     </div>
   )
 }
 
 export function ChartView({ chart, onChartType }: { chart: Chart; onChartType?: ChartTypeHandler }) {
-  if (chart.type === 'table' || chart.type === 'funnel') return <Switchable chart={chart} onChartType={onChartType} />
+  if (chart.type === 'table' || chart.type === 'funnel' || (chart.type === 'bar' && isTableShaped(chart)))
+    return <Switchable chart={chart} onChartType={onChartType} />
   if (chart.items.length === 0) return null
   if (chart.type === 'bar') return <BarChart items={chart.items} />
   return <PieChart items={chart.items} />
