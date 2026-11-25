@@ -4,6 +4,7 @@ import { parseNotes } from './parse.ts'
 import { loadQuestions, saveQuestions, typeName, type Question } from './questions.ts'
 import { Visual } from './Visual.tsx'
 import type { LevelTarget } from './Product.tsx'
+import type { ChartType } from './parse.ts'
 
 function Logo({ size }: { size: number }) {
   return <img src="./logo.svg" width={size} height={size} alt="" />
@@ -100,6 +101,15 @@ export default function App() {
     updateNotes(lines.join('\n'))
   }
 
+  // Clicking Table / Bar / Funnel above a table: rewrite its --table-- / --bar-- / --funnel-- line.
+  function setChartType(line: number, type: ChartType) {
+    if (!active) return
+    const lines = active.notes.split('\n')
+    if (line >= lines.length) return
+    lines[line] = lines[line].replace(/--(table|bar|funnel)--/i, `--${type}--`)
+    updateNotes(lines.join('\n'))
+  }
+
   function deleteQuestion(id: string) {
     if (!window.confirm('Delete this question and its notes?')) return
     const rest = questions.filter((q) => q.id !== id)
@@ -183,7 +193,9 @@ export default function App() {
                 placeholder={
                   active.type === 'product-sense'
                     ? 'Clarify\nWhich part of Maps?\n-> Navigation\n--end--'
-                    : 'Clarify\nIs this new cars only?\n-> Yes, new cars only\n--end--'
+                    : active.type === 'root-cause'
+                      ? 'Clarify\nHow is the metric counted?\n-> Taps on Start\nSudden or gradual?\n-> Sudden, since Tuesday\n--end--'
+                      : 'Clarify\nIs this new cars only?\n-> Yes, new cars only\n--end--'
                 }
                 spellCheck={false}
                 autoFocus
@@ -200,11 +212,25 @@ export default function App() {
                     <b>P0</b>–<b>P3</b> under Solutions · end a line with <b>*</b> (or click its star) for the north star
                   </>
                 )}
+                {active.type === 'root-cause' && (
+                  <>
+                    {' '}
+                    · a <b>--table--</b> like <b>Step,Before,After</b> gets a <b>Table / Bar / Funnel</b> switch: Bar puts the
+                    columns side by side, Funnel shows where people drop
+                  </>
+                )}
               </p>
             </section>
           )}
 
-          <Visual sections={sections} steps={steps} type={active.type} onStar={toggleStar} onLevel={setFriction} />
+          <Visual
+            sections={sections}
+            steps={steps}
+            type={active.type}
+            onStar={toggleStar}
+            onLevel={setFriction}
+            onChartType={setChartType}
+          />
         </main>
       )}
       {dialog}

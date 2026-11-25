@@ -97,7 +97,18 @@ Pick **Product sense** in + New. Clarify, Structure, `->` answers, `--end--` and
 | Any other indented line | A description |
 | A line under Pain points, Solutions, Metrics… | A card; indented lines are its description and friction |
 | `P0`–`P3` (or `high`, `low`) indented under a solution | Its priority badge |
+| `Metrics`, then `North star`, `Supporting metrics`, `Guardrails` (each with metrics indented below) | One panel: the north star on top, supporting metrics and guardrails side by side |
 | A line ending in ` *`, or a click on its star | The north star (one per section). Hover it to see it shoot |
+
+## Root cause notes
+
+Pick **Root cause** in + New. Everything above works here too. The headings it knows: Activation funnel, Funnel, Data check, Internal factors, External factors, Hypotheses, Root cause, Conclusion, Next steps.
+
+| I type | It draws |
+| --- | --- |
+| `--table--`, then `Step,Before,After` and one step per line, closed with `--end--` | A table with a **Table / Bar / Funnel** switch above it |
+| A click on **Bar** | One group of bars per step, one bar per column (Before next to After), with a legend. (It writes `--bar--`.) |
+| A click on **Funnel** | Each number column becomes a funnel, side by side, with the % kept and dropped at each step. With two columns or more, the step that changed most is marked in red. (It writes `--funnel--` into my notes; **Table** switches back.) |
 
 ## Where the code is
 
