@@ -100,6 +100,15 @@ Pick **Product sense** in + New. Clarify, Structure, `->` answers, `--end--` and
 | `Metrics`, then `North star`, `Supporting metrics`, `Guardrails` (each with metrics indented below) | One panel: the north star on top, supporting metrics and guardrails side by side |
 | A line ending in ` *`, or a click on its star | The north star (one per section). Hover it to see it shoot |
 
+## Root cause notes
+
+Pick **Root cause** in + New. Everything above works here too. The headings it knows: Activation funnel, Funnel, Data check, Internal factors, External factors, Hypotheses, Root cause, Conclusion, Next steps.
+
+| I type | It draws |
+| --- | --- |
+| `--table--`, then `Step,Before,After` and one step per line, closed with `--end--` | A table with a **Table / Funnel** switch above it |
+| A click on **Funnel** | Each number column becomes a funnel, side by side, with the % kept and dropped at each step. With two columns or more, the step that changed most is marked in red. (It writes `--funnel--` into my notes; **Table** switches back.) |
+
 ## Where the code is
 
 ```

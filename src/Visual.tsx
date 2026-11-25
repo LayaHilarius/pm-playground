@@ -3,7 +3,7 @@
 
 import { useState } from 'react'
 import { ChainBody } from './Chain.tsx'
-import { ChartView } from './Charts.tsx'
+import { ChartView, type ChartTypeHandler } from './Charts.tsx'
 import type { Point, Section, Step } from './parse.ts'
 import { normalize } from './parse.ts'
 import { Friction, Journey, LevelMeter, MetricsPanel, NorthStar, starLines, type LevelHandler, type StarHandler } from './Product.tsx'
@@ -102,7 +102,7 @@ function summaryOf(section: Section): string {
   }
   // Charts add their items: "Blue collar 30% · White collar 40%"
   for (const chart of section.charts) {
-    if (chart.type === 'table') parts.push(chart.rows.slice(1).map((r) => r[0]).join(' · '))
+    if (chart.type === 'table' || chart.type === 'funnel') parts.push(chart.rows.slice(1).map((r) => r[0]).join(' · '))
     else parts.push(chart.items.map((i) => `${i.label} ${i.shown}`.trim()).join(' · '))
   }
   return parts.filter(Boolean).join(' · ')
@@ -114,6 +114,7 @@ interface BodyProps {
   showMaths: boolean
   onStar?: StarHandler
   onLevel?: LevelHandler
+  onChartType?: ChartTypeHandler
 }
 
 // Goal and Mission are short statements, so they stay as plain bullets.
@@ -140,7 +141,7 @@ function Bullets({ section }: { section: Section }) {
   )
 }
 
-function SectionBody({ section, showMaths, onStar, onLevel }: BodyProps) {
+function SectionBody({ section, showMaths, onStar, onLevel, onChartType }: BodyProps) {
   let main = null
   if (section.kind === 'chain') main = <ChainBody section={section} showMaths={showMaths} />
   else if (section.kind === 'clarify') main = <ClarifyList section={section} />
@@ -164,7 +165,7 @@ function SectionBody({ section, showMaths, onStar, onLevel }: BodyProps) {
       {section.charts.length > 0 && (
         <div className="charts">
           {section.charts.map((chart, i) => (
-            <ChartView key={i} chart={chart} />
+            <ChartView key={i} chart={chart} onChartType={onChartType} />
           ))}
         </div>
       )}
@@ -173,7 +174,7 @@ function SectionBody({ section, showMaths, onStar, onLevel }: BodyProps) {
 }
 
 // After --end--: the section folds into one line. Click it to open it again.
-function FoldedSection({ section, showMaths, onStar, onLevel }: BodyProps) {
+function FoldedSection({ section, showMaths, onStar, onLevel, onChartType }: BodyProps) {
   const [open, setOpen] = useState(false)
   return (
     <div className={open ? 'folded open' : 'folded'}>
@@ -188,20 +189,23 @@ function FoldedSection({ section, showMaths, onStar, onLevel }: BodyProps) {
       </button>
       {open && (
         <div className="folded-body">
-          <SectionBody section={section} showMaths={showMaths} onStar={onStar} onLevel={onLevel} />
+          <SectionBody section={section} showMaths={showMaths} onStar={onStar} onLevel={onLevel} onChartType={onChartType} />
         </div>
       )}
     </div>
   )
 }
 
-function SectionView({ section, showMaths, onStar, onLevel }: BodyProps) {
-  if (section.ended) return <FoldedSection section={section} showMaths={showMaths} onStar={onStar} onLevel={onLevel} />
+function SectionView({ section, showMaths, onStar, onLevel, onChartType }: BodyProps) {
+  if (section.ended)
+    return (
+      <FoldedSection section={section} showMaths={showMaths} onStar={onStar} onLevel={onLevel} onChartType={onChartType} />
+    )
   return (
     <section className="section">
       <h2>{section.title}</h2>
       {section.note && <p className="section-note">{section.note}</p>}
-      <SectionBody section={section} showMaths={showMaths} onStar={onStar} onLevel={onLevel} />
+      <SectionBody section={section} showMaths={showMaths} onStar={onStar} onLevel={onLevel} onChartType={onChartType} />
     </section>
   )
 }
@@ -228,6 +232,7 @@ export function StepBar({ steps }: { steps: Step[] }) {
 const EXAMPLES: Record<string, string> = {
   guesstimate: `Clarify\nNew cars only, or used too?\n-> New only\n--end--\n\nStructure\nClarify\nChain\nSegment\n--end--`,
   'product-sense': `Structure\nClarify\nGoal\nUsers\nUser journey\nPain points\nSolutions\nMetrics\n--end--\n\nUser journey\nSearch destination\n  Too many results\n    high\nFollow directions *\n  Lost at junctions\n    very high`,
+  'root-cause': `Clarify\nHow is a navigation start counted?\n-> Tapping Start on a route\nSudden or gradual?\n-> Sudden, from last Tuesday\n--end--\n\nStructure\nClarify\nActivation funnel\nInternal factors\nExternal factors\nHypotheses\nConclusion\n--end--\n\nActivation funnel\n--table--\nStep,Before,After\nOpen app,10M,10M\nSearch,6M,5.9M\nSee route,5M,4.9M\nTap Start,4M,2.9M\n--end--`,
 }
 
 interface VisualProps {
@@ -236,9 +241,10 @@ interface VisualProps {
   type: string
   onStar?: StarHandler
   onLevel?: LevelHandler
+  onChartType?: ChartTypeHandler
 }
 
-export function Visual({ sections, steps, type, onStar, onLevel }: VisualProps) {
+export function Visual({ sections, steps, type, onStar, onLevel, onChartType }: VisualProps) {
   // The Structure list lives in the step bar, so it isn't drawn again below.
   const body = sections.filter((s) => s.kind !== 'structure')
   // One Maths box only, next to the latest tree (Chain or Solve).
@@ -256,7 +262,14 @@ export function Visual({ sections, steps, type, onStar, onLevel }: VisualProps) 
     <div className="visual">
       <StepBar steps={steps} />
       {body.map((section, i) => (
-        <SectionView key={i} section={section} showMaths={section === lastTree} onStar={onStar} onLevel={onLevel} />
+        <SectionView
+          key={i}
+          section={section}
+          showMaths={section === lastTree}
+          onStar={onStar}
+          onLevel={onLevel}
+          onChartType={onChartType}
+        />
       ))}
     </div>
   )

@@ -31,6 +31,10 @@ import { calculate } from './calc.ts'
 //   Pain points / Solutions / Metrics: a line is a card, an indented line is its description,
 //                           and an indented level word is its friction (or priority: P0–P3 under Solutions).
 //   A line ending in " *"   is my north star (or my pick). Clicking a card's star sets it.
+//
+// Root cause:
+//   --table-- Step,Before,After ... --end--   the Funnel button above it turns each number
+//                           column into a funnel (it rewrites the marker as --funnel--).
 
 export type SectionKind = 'clarify' | 'structure' | 'chain' | 'journey' | 'metrics' | 'list'
 
@@ -106,7 +110,7 @@ export function levelOf(text: string, sectionTitle: string): Level | null {
   return { kind, rank, label: `${capitalize(word)} ${kind}` }
 }
 
-export type ChartType = 'pie' | 'bar' | 'table'
+export type ChartType = 'pie' | 'bar' | 'table' | 'funnel'
 
 export interface ChartItem {
   label: string
@@ -118,7 +122,8 @@ export interface ChartItem {
 export interface Chart {
   type: ChartType
   items: ChartItem[] // pie and bar
-  rows: string[][] // table: "key,value,value" -> cells, first row is the header
+  rows: string[][] // table and funnel: "key,value,value" -> cells, first row is the header
+  line: number // the line of its --marker--, so the Funnel / Table button can switch it
 }
 
 export interface Section {
@@ -184,6 +189,17 @@ const KNOWN_HEADINGS = [
   'trade-offs',
   'trade offs',
   'prioritization',
+  // Root cause
+  'funnel',
+  'activation funnel',
+  'data check',
+  'internal factors',
+  'external factors',
+  'hypothesis',
+  'hypotheses',
+  'root cause',
+  'conclusion',
+  'next steps',
 ]
 
 const STRUCTURE_HEADINGS = ['structure', 'approach', 'framework']
@@ -256,7 +272,8 @@ export function stripComments(notes: string): string {
 
 // --pie-- ... --end--: one "key,value" per line (value can be 10%, 290M, 2 crore).
 // --table-- ... --end--: "key,value,value" per line, the first line is the header.
-const CHART_MARKER = /^--(pie|bar|table)--$/i
+// --funnel-- is a table drawn as a funnel: one funnel per number column (Before, After).
+const CHART_MARKER = /^--(pie|bar|table|funnel)--$/i
 
 // "Rich,10%" -> label + value. ("Rich 10%" works too.) No number -> equal share.
 function chartItem(line: string): ChartItem {
@@ -285,7 +302,7 @@ function chartItem(line: string): ChartItem {
 }
 
 function addToChart(chart: Chart, line: string) {
-  if (chart.type === 'table') {
+  if (chart.type === 'table' || chart.type === 'funnel') {
     chart.rows.push(line.split(',').map((cell) => cell.trim()))
     return
   }
@@ -430,7 +447,7 @@ function parseSections(notes: string): Section[] {
         current = { title: 'Notes', note: '', kind: 'list', points: [], tree: [], charts: [], ended: false }
         sections.push(current)
       }
-      openChart = { type, items: [], rows: [] }
+      openChart = { type, items: [], rows: [], line: lineNumber }
       current.charts.push(openChart)
       continue
     }
