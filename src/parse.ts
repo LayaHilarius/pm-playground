@@ -48,7 +48,7 @@ export interface TreeNode {
 
 // How bad a pain point is (friction) or how important a solution is (priority). Rank 1–4.
 export interface Level {
-  kind: 'friction' | 'priority'
+  kind: 'friction' | 'priority' | 'risk'
   rank: number
   label: string
 }
@@ -106,8 +106,13 @@ export function levelOf(text: string, sectionTitle: string): Level | null {
   const word = match[2].toLowerCase().replace(/\s+/, ' ')
   const named = (match[1] ?? match[3] ?? '').toLowerCase()
   const isP = /^p[0-3]$/.test(word)
+  const title = normalize(sectionTitle)
   const kind: Level['kind'] =
-    isP || named === 'priority' || (named === '' && normalize(sectionTitle).startsWith('solution')) ? 'priority' : 'friction'
+    isP || named === 'priority' || (named === '' && title.startsWith('solution'))
+      ? 'priority'
+      : named === '' && title.startsWith('risk')
+        ? 'risk'
+        : 'friction'
   if (isP) return { kind, rank: 4 - Number(word[1]), label: word.toUpperCase() }
   const rank = { low: 1, moderate: 2, medium: 2, high: 3, 'very high': 4 }[word] ?? 2
   return { kind, rank, label: `${capitalize(word)} ${kind}` }
@@ -215,6 +220,26 @@ const KNOWN_HEADINGS = [
   'how to measure',
   'experiment',
   'targets',
+  // Strategy
+  'why now',
+  'market',
+  'market size',
+  'trends',
+  'customer segments',
+  'competition',
+  'competitors',
+  'competitive landscape',
+  'right to win',
+  'options',
+  'strategic options',
+  'risks',
+  'risks and mitigations',
+  'go-to-market',
+  'go to market',
+  'gtm',
+  'launch plan',
+  'metrics funnel',
+  'recommendation',
 ]
 
 const STRUCTURE_HEADINGS = ['structure', 'approach', 'framework']
@@ -649,6 +674,11 @@ function stepsFrom(sections: Section[]): Step[] {
   const lastIndex = sections.length - 1
   return structure.points.map((point) => {
     let index = sections.findIndex((s) => sameStep(s.title, point.text))
+    // "Metrics" in Structure is also opened by "Metrics funnel" or "Metric hierarchy".
+    if (index === -1) {
+      const key = normalize(point.text).replace(/s$/, '')
+      if (key.length >= 4) index = sections.findIndex((s) => normalize(s.title).startsWith(key))
+    }
     // A "Guardrails" step is also covered by a Guardrails box inside Metrics.
     const box = METRIC_GROUP.exec(point.text)
     if (index === -1 && box) {

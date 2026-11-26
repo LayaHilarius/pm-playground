@@ -714,3 +714,6 @@ mark.answer {
 .formula-table .ft-metric { font-weight: 600; }
 .formula-table td { vertical-align: middle; }
 .formula-table td:last-child, .formula-table td:nth-child(2) { white-space: nowrap; }
+
+.funnel-bar-track { position: relative; }
+.funnel-value.outside { position: absolute; left: calc(50% + var(--half) + 6px); top: 50%; transform: translateY(-50%); color: var(--text); padding: 0; }

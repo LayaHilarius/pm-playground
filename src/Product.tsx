@@ -49,14 +49,27 @@ function Friction({ point, insertAfter, onLevel }: { point: Point; insertAfter: 
 }
 export { Friction }
 
-export function NorthStar({ on, line, group, onStar }: { on: boolean; line: number; group: number[]; onStar?: StarHandler }) {
+// label: "North star" on the journey and pain points, "My pick" on options and solutions.
+export function NorthStar({
+  on,
+  line,
+  group,
+  onStar,
+  label = 'North star',
+}: {
+  on: boolean
+  line: number
+  group: number[]
+  onStar?: StarHandler
+  label?: string
+}) {
   return (
     <button
       type="button"
       className={on ? 'north-star on' : 'north-star'}
       aria-pressed={on}
-      aria-label={on ? 'North star' : 'Make this the north star'}
-      title={on ? 'North star' : 'Make this the north star'}
+      aria-label={on ? label : `Make this ${label === 'North star' ? 'the north star' : 'my pick'}`}
+      title={on ? label : `Make this ${label === 'North star' ? 'the north star' : 'my pick'}`}
       onClick={(e) => {
         e.stopPropagation()
         onStar?.(line, group)
@@ -66,7 +79,7 @@ export function NorthStar({ on, line, group, onStar }: { on: boolean; line: numb
       <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
         <path d="M12 2.8l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 16.8l-5.4 2.9 1-6.1-4.4-4.3 6.1-.9z" />
       </svg>
-      {on && <span className="star-label">North star</span>}
+      {on && <span className="star-label">{label}</span>}
     </button>
   )
 }

@@ -12,6 +12,7 @@ export const QUESTION_TYPES: QuestionType[] = [
   { id: 'product-sense', name: 'Product sense', ready: true },
   { id: 'metrics', name: 'Metrics', ready: true },
   { id: 'root-cause', name: 'Root cause', ready: true },
+  { id: 'strategy', name: 'Strategy', ready: true },
 ]
 
 export interface Question {

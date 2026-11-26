@@ -113,6 +113,18 @@ Pick **Metrics** in + New. The headings it knows: Clarify, Goal, Key actions, Me
 | `up` or `down` indented under a metric | "Higher is better" or "Lower is better" |
 | Any other indented line | The question the metric answers |
 
+## Strategy notes
+
+Pick **Strategy** in + New. The headings it knows: Clarify, Goal, Why now, Market, Trends, Customer segments, Pain points, Competition, Right to win, Options, Risks, Go-to-market, Metrics (or Metrics funnel), Recommendation.
+
+| I type | It draws |
+| --- | --- |
+| `--table--` under Market, Customer segments, Competition or Metrics funnel | A table with the Table / Bar / Funnel switch |
+| Lines under Why now, Trends, Right to win or Recommendation | Plain bullets |
+| A line ending in ` *` under Options (or a click on its star) | My pick |
+| `low`, `medium`, `high` indented under a risk | Its severity: four dashes, green to red |
+| `-> mitigation` under a risk | The mitigation, highlighted |
+
 ## Root cause notes
 
 Pick **Root cause** in + New. Everything above works here too. The headings it knows: Activation funnel, Funnel, Data check, Internal factors, External factors, Hypotheses, Root cause, Conclusion, Next steps.
