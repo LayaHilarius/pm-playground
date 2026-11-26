@@ -1,5 +1,6 @@
 // --pie--, --bar--, --table-- and --funnel-- blocks from my notes.
 
+import type React from 'react'
 import { calculate } from './calc.ts'
 import type { Chart, ChartItem, ChartType } from './parse.ts'
 
@@ -212,10 +213,12 @@ function Funnel({ title, stages, color, highlight }: { title: string; stages: St
                   {short(stage.fromPrev)} kept · {short(1 - stage.fromPrev)} drop
                 </span>
               )}
-              <span className="funnel-bar-track">
+              {/* A thin bar can't hold its number, so the number sits just to its right. */}
+              <span className="funnel-bar-track" style={{ '--half': `${width / 2}%` } as React.CSSProperties}>
                 <span className="funnel-bar" style={{ width: `${width}%`, background: color }}>
-                  <span className="funnel-value">{stage.shown || '–'}</span>
+                  {width >= 25 && <span className="funnel-value">{stage.shown || '–'}</span>}
                 </span>
+                {width < 25 && <span className="funnel-value outside">{stage.shown || '–'}</span>}
               </span>
               <span className="funnel-label">{stage.label}</span>
             </li>

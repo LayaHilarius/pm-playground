@@ -193,7 +193,9 @@ export default function App() {
                 placeholder={
                   active.type === 'product-sense'
                     ? 'Clarify\nWhich part of Maps?\n-> Navigation\n--end--'
-                    : active.type === 'metrics'
+                    : active.type === 'strategy'
+                      ? 'Clarify\nWhich country?\n-> India first\nBuild, buy or partner?\n-> Open\n--end--'
+                      : active.type === 'metrics'
                       ? 'Clarify\nNew feature or mature product?\n-> New feature, launched last month\n--end--'
                       : active.type === 'root-cause'
                       ? 'Clarify\nHow is the metric counted?\n-> Taps on Start\nSudden or gradual?\n-> Sudden, since Tuesday\n--end--'
@@ -212,6 +214,15 @@ export default function App() {
                     · <b>User journey</b>: a stage per line, indent for its pain points, indent again for friction (
                     <b>low</b>, <b>moderate</b>, <b>high</b>, <b>very high</b>) · indented lines are descriptions ·{' '}
                     <b>P0</b>–<b>P3</b> under Solutions · end a line with <b>*</b> (or click its star) for the north star
+                  </>
+                )}
+                {active.type === 'strategy' && (
+                  <>
+                    {' '}
+                    · Market, Customer segments, Competition and Options as <b>--table--</b> (switch to Bar or Funnel) ·{' '}
+                    <b>Right to win</b> and <b>Recommendation</b> as bullets · end your pick with <b>*</b> under Options ·
+                    under <b>Risks</b>, indent <b>low</b> / <b>medium</b> / <b>high</b> and <b>-&gt; mitigation</b> ·{' '}
+                    <b>Metrics</b> works like the Metrics type
                   </>
                 )}
                 {active.type === 'metrics' && (

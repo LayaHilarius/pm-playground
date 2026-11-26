@@ -15,9 +15,10 @@ interface CardProps {
   group: number[]
   onStar?: StarHandler
   onLevel?: LevelHandler // only for pain points: friction I can click
+  starLabel?: string
 }
 
-function PointCard({ point, group, onStar, onLevel }: CardProps) {
+function PointCard({ point, group, onStar, onLevel, starLabel }: CardProps) {
   const [open, setOpen] = useState(false)
   const canExpand = point.text.length > 90 || point.details.join(' ').length > 140
 
@@ -43,7 +44,7 @@ function PointCard({ point, group, onStar, onLevel }: CardProps) {
           point.level && <LevelMeter level={point.level} />
         )}
       </div>
-      {onStar && <NorthStar on={point.star} line={point.line} group={group} onStar={onStar} />}
+      {onStar && <NorthStar on={point.star} line={point.line} group={group} onStar={onStar} label={starLabel} />}
     </div>
   )
 }
@@ -118,7 +119,7 @@ interface BodyProps {
 }
 
 // Goal and Mission are short statements, so they stay as plain bullets.
-const BULLET_SECTIONS = ['goal', 'goals', 'mission']
+const BULLET_SECTIONS = ['goal', 'goals', 'mission', 'why now', 'trends', 'right to win', 'recommendation']
 
 function Bullets({ section }: { section: Section }) {
   return (
@@ -150,11 +151,22 @@ function SectionBody({ section, showMaths, onStar, onLevel, onChartType }: BodyP
   else if (BULLET_SECTIONS.includes(normalize(section.title))) main = <Bullets section={section} />
   else if (section.points.length > 0) {
     const group = starLines(section)
-    const isPain = normalize(section.title).startsWith('pain')
+    const title = normalize(section.title)
+    const isPain = title.startsWith('pain')
+    // Risks have a severity, not a pick. Options and solutions get "My pick"; the rest "North star".
+    const isRisk = title.startsWith('risk')
+    const starLabel = isPain || title.startsWith('user') || title.startsWith('journey') ? 'North star' : 'My pick'
     main = (
       <div className="point-grid">
         {section.points.map((point) => (
-          <PointCard key={point.line} point={point} group={group} onStar={onStar} onLevel={isPain ? onLevel : undefined} />
+          <PointCard
+            key={point.line}
+            point={point}
+            group={group}
+            onStar={isRisk ? undefined : onStar}
+            onLevel={isPain ? onLevel : undefined}
+            starLabel={starLabel}
+          />
         ))}
       </div>
     )
@@ -233,6 +245,7 @@ const EXAMPLES: Record<string, string> = {
   guesstimate: `Clarify\nNew cars only, or used too?\n-> New only\n--end--\n\nStructure\nClarify\nChain\nSegment\n--end--`,
   'product-sense': `Structure\nClarify\nGoal\nUsers\nUser journey\nPain points\nSolutions\nMetrics\n--end--\n\nUser journey\nSearch destination\n  Too many results\n    high\nFollow directions *\n  Lost at junctions\n    very high`,
   metrics: `Structure\nClarify\nGoal\nKey actions\nMetric hierarchy\nPitfalls\nSummary\n--end--\n\nMetric hierarchy\nPrimary: 60-day repeat transfer rate\n  F: customers who transfer again in 60 days / customers who made a transfer\n  up\nAdoption: Tracking view rate\n  F: transfers with tracking opened / all transfers\nGuardrail: Transfer failure rate\n  F: failed transfers / all transfers\n  down`,
+  strategy: `Structure\nClarify\nGoal\nMarket\nCustomer segments\nPain points\nCompetition\nRight to win\nOptions\nRisks\nGo-to-market\nMetrics\nRecommendation\n--end--\n\nOptions\nBuild our own *\n  Uses Maps and Android reach\nPartner with a local player\n\nRisks\nRegulation on ride pricing\n  high\n  -> Start in one city with fixed fares`,
   'root-cause': `Clarify\nHow is a navigation start counted?\n-> Tapping Start on a route\nSudden or gradual?\n-> Sudden, from last Tuesday\n--end--\n\nStructure\nClarify\nActivation funnel\nInternal factors\nExternal factors\nHypotheses\nConclusion\n--end--\n\nActivation funnel\n--table--\nStep,Before,After\nOpen app,10M,10M\nSearch,6M,5.9M\nSee route,5M,4.9M\nTap Start,4M,2.9M\n--end--`,
 }
 
