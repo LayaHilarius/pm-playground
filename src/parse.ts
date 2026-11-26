@@ -65,13 +65,16 @@ export interface Point {
   endLine: number // its last line (descriptions included), so a new friction line goes after it
   children: Point[] // User journey: the pain points inside a stage
   group: MetricGroup // Metrics: which box it belongs in
+  category: string // Metrics: the type I wrote before ":" ("Adoption", "Primary"), or ''
+  formula: string // Metrics: an indented "F: a / b" line
+  direction: 'up' | 'down' | '' // Metrics: which way is good
 }
 
 export type MetricGroup = '' | 'north' | 'supporting' | 'guardrail'
 
 function newPoint(text: string, line: number, answers: string[] = [], indent = 0): Point {
   const { text: clean, star } = splitStar(text)
-  return { text: clean, answers, details: [], level: null, star, line, indent, levelLine: -1, endLine: line, children: [], group: '' }
+  return { text: clean, answers, details: [], level: null, star, line, indent, levelLine: -1, endLine: line, children: [], group: '', category: '', formula: '', direction: '' }
 }
 
 // Remembers which line set a point's friction, and that the point now reaches this line.
@@ -200,6 +203,18 @@ const KNOWN_HEADINGS = [
   'root cause',
   'conclusion',
   'next steps',
+  // Metrics
+  'metric hierarchy',
+  'metrics hierarchy',
+  'key actions',
+  'users and actions',
+  'user actions',
+  'pitfalls',
+  'tradeoffs and pitfalls',
+  'measurement',
+  'how to measure',
+  'experiment',
+  'targets',
 ]
 
 const STRUCTURE_HEADINGS = ['structure', 'approach', 'framework']
@@ -240,7 +255,7 @@ function kindOf(title: string): SectionKind {
   // Chain (the formula tree) and Solve (the same tree with numbers) are both drawn as trees.
   if (t === 'chain' || t === 'solve') return 'chain'
   if (t === 'user journey' || t === 'journey') return 'journey'
-  if (t === 'metrics' || t === 'metric') return 'metrics'
+  if (t === 'metrics' || t === 'metric' || t === 'metric hierarchy' || t === 'metrics hierarchy') return 'metrics'
   return 'list'
 }
 
@@ -382,46 +397,105 @@ function addToJourney(section: Section, line: string, indent: number, lineNumber
 
 // Inside Metrics: "North star", "Supporting metrics", "Guardrails" (with or without ":") start a box.
 // "North star: 90-day retention" puts the metric on the same line.
-const METRIC_GROUP =
-  /^(north\s*star(?:\s*metrics?)?|supporting(?:\s*metrics?|\s*mertics?)?|secondary(?:\s*metrics?)?|guard\s*rails?|gaurd\s*rails?|counter(?:\s*metrics?)?)\s*(?::\s*(.*))?$/i
+// Any metric type works the same way: "Primary: repeat rate", "Adoption: tracking views", "Experience: ...".
+const METRIC_TYPES = [
+  'north\\s*star(?:\\s*metrics?)?',
+  'primary(?:\\s*(?:outcome\\s*)?metrics?)?',
+  'supporting(?:\\s*metrics?|\\s*mertics?)?',
+  'secondary(?:\\s*metrics?)?',
+  'guard\\s*rails?(?:\\s*metrics?)?',
+  'gaurd\\s*rails?',
+  'counter(?:\\s*metrics?)?',
+  'adoption',
+  'activation',
+  'engagement',
+  'retention',
+  'growth',
+  '(?:customer\\s*|user\\s*)?experience',
+  '(?:feature\\s*)?quality',
+  'satisfaction',
+  'trust',
+  'reliability',
+  'efficiency',
+  'business',
+  'revenue',
+  'monetization',
+  'leading(?:\\s*(?:indicator|metric))?',
+  'lagging(?:\\s*(?:indicator|metric))?',
+]
+const METRIC_GROUP = new RegExp(`^(${METRIC_TYPES.join('|')})\\s*(?::\\s*(.*))?$`, 'i')
 
 function metricGroupOf(label: string): MetricGroup {
   const l = label.toLowerCase()
-  if (l.startsWith('north')) return 'north'
-  if (l.startsWith('supporting') || l.startsWith('secondary')) return 'supporting'
-  return 'guardrail'
+  if (l.startsWith('north') || l.startsWith('primary')) return 'north'
+  if (/^(guard|gaurd|counter)/.test(l)) return 'guardrail'
+  return 'supporting'
+}
+
+// The box's kicker: "Adoption", "Customer experience". The generic group names give ''.
+function metricCategoryOf(label: string): string {
+  const l = label.toLowerCase().replace(/\s+/g, ' ').trim()
+  if (/^(north|supporting|secondary|guard|gaurd|counter)/.test(l)) return ''
+  if (l.startsWith('primary')) return 'Primary metric'
+  return capitalize(l)
+}
+
+// "up", "down", "higher is better", "lower is better", "↑", "↓"
+const DIRECTION = /^(?:good\s*(?:if|when)?\s*:?\s*)?(up|down|higher(?:\s+is\s+better)?|lower(?:\s+is\s+better)?|increase|decrease|↑|↓)$/i
+
+function directionOf(text: string): 'up' | 'down' | '' {
+  const m = DIRECTION.exec(text.trim())
+  if (!m) return ''
+  return /^(up|higher|increase|↑)/i.test(m[1]) ? 'up' : 'down'
 }
 
 interface MetricState {
   group: MetricGroup
+  category: string
   itemIndent: number // how far this box's metrics are indented (-1: none yet)
 }
 
-// A line inside Metrics: a box label, a metric in the current box, or (indented deeper) its description.
+export const NEW_METRIC_STATE: MetricState = { group: '', category: '', itemIndent: -1 }
+
+// A line inside Metrics: a box label, a metric in the current box, or (indented deeper) its
+// formula ("F: ..."), its good direction ("up" / "down"), or a description.
 function addToMetrics(section: Section, line: string, indent: number, lineNumber: number, state: MetricState): MetricState {
   const label = METRIC_GROUP.exec(line)
   if (label) {
     const group = metricGroupOf(label[1])
+    const category = metricCategoryOf(label[1])
     const rest = (label[2] ?? '').trim()
     if (rest) {
       const point = newPoint(rest, lineNumber, [], indent)
       point.group = group
+      point.category = category
       section.points.push(point)
+      // The metric sits on the label line, so lines indented under it are its details.
+      return { group, category, itemIndent: indent }
     }
-    return { group, itemIndent: -1 }
+    return { group, category, itemIndent: -1 }
   }
   const text = line.replace(/^([-•]|\*\s|\d+[.)])\s*/, '')
   const last = section.points[section.points.length - 1]
   if (last && state.itemIndent !== -1 && indent > state.itemIndent && last.group === state.group) {
-    const level = levelOf(text, section.title)
-    if (level) setLevel(last, level, lineNumber)
-    else addDetail(last, text, lineNumber)
+    const formula = /^f\s*[:=]\s*(.+)$/i.exec(text)
+    const direction = directionOf(text)
+    if (formula) last.formula = formula[1].trim()
+    else if (direction) last.direction = direction
+    else {
+      const level = levelOf(text, section.title)
+      if (level) setLevel(last, level, lineNumber)
+      else addDetail(last, text, lineNumber)
+      return state
+    }
+    last.endLine = Math.max(last.endLine, lineNumber)
     return state
   }
   const point = newPoint(text, lineNumber, [], indent)
   point.group = state.group
+  point.category = state.category
   section.points.push(point)
-  return { group: state.group, itemIndent: state.itemIndent === -1 ? indent : Math.min(state.itemIndent, indent) }
+  return { ...state, itemIndent: state.itemIndent === -1 ? indent : Math.min(state.itemIndent, indent) }
 }
 
 function parseSections(notes: string): Section[] {
@@ -433,7 +507,7 @@ function parseSections(notes: string): Section[] {
   let openChart: Chart | null = null
   // User journey: how far the current stage's pain points are indented.
   let painIndent = -1
-  let metricState: MetricState = { group: '', itemIndent: -1 }
+  let metricState: MetricState = NEW_METRIC_STATE
 
   const lines = stripComments(notes).split('\n')
   for (let lineNumber = 0; lineNumber < lines.length; lineNumber++) {
@@ -501,7 +575,7 @@ function parseSections(notes: string): Section[] {
       sections.push(current)
       treeStack = []
       painIndent = -1
-      metricState = { group: '', itemIndent: -1 }
+      metricState = NEW_METRIC_STATE
       continue
     }
 
@@ -580,6 +654,10 @@ function stepsFrom(sections: Section[]): Step[] {
     if (index === -1 && box) {
       const group = metricGroupOf(box[1])
       index = sections.findIndex((s) => s.kind === 'metrics' && s.points.some((p) => p.group === group))
+    }
+    // A "Formulas" / "Define metrics" step is covered by the F: lines inside Metrics.
+    if (index === -1 && /^(formulas?|define\s*(the\s*)?metrics?|metric\s*definitions?)$/i.test(normalize(point.text))) {
+      index = sections.findIndex((s) => s.kind === 'metrics' && s.points.some((p) => p.formula))
     }
     let status: StepStatus = 'todo'
     if (index !== -1) {

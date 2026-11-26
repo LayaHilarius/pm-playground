@@ -100,6 +100,19 @@ Pick **Product sense** in + New. Clarify, Structure, `->` answers, `--end--` and
 | `Metrics`, then `North star`, `Supporting metrics`, `Guardrails` (each with metrics indented below) | One panel: the north star on top, supporting metrics and guardrails side by side |
 | A line ending in ` *`, or a click on its star | The north star (one per section). Hover it to see it shoot |
 
+## Metrics notes
+
+Pick **Metrics** in + New. The headings it knows: Clarify, Goal, Key actions, Metric hierarchy, Formulas, Pitfalls, Summary.
+
+| I type | It draws |
+| --- | --- |
+| `Metric hierarchy` (or `Metrics`), then `Primary: <metric>` | The big gold card on top |
+| `Adoption:`, `Engagement:`, `Retention:`, `Experience:`, `Quality:`, `Business:`, `Leading:` … then the metric | One box per metric, labelled with its type |
+| `Guardrail: <metric>` | A red box, shown last |
+| `F: a / b` indented under a metric (`× 1000` at the end works too) | The formula as a fraction, plus a row in the formula table under the boxes |
+| `up` or `down` indented under a metric | "Higher is better" or "Lower is better" |
+| Any other indented line | The question the metric answers |
+
 ## Root cause notes
 
 Pick **Root cause** in + New. Everything above works here too. The headings it knows: Activation funnel, Funnel, Data check, Internal factors, External factors, Hypotheses, Root cause, Conclusion, Next steps.

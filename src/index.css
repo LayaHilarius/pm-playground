@@ -682,3 +682,35 @@ mark.answer {
 @media (prefers-reduced-motion: reduce) {
   .gbar { transition: none; }
 }
+
+/* Metric hierarchy: one box per metric, formulas as fractions, and the formula table. */
+.metric-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 12px; }
+.metric-card {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 14px 16px;
+  border: 1px solid var(--border);
+  border-top: 3px solid #2a78d6;
+  border-radius: 14px;
+  background: var(--surface);
+  min-width: 0;
+}
+.metric-card.guardrail { border-top-color: #e34948; background: #fffafa; }
+.metric-card.other { border-top-color: var(--border); }
+.metric-card-kicker { font-size: 11px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: #1d5fae; }
+.metric-card.guardrail .metric-card-kicker { color: #b42318; }
+.metric-card-text { font-size: 16px; font-weight: 700; }
+.formula { display: inline-flex; align-items: center; gap: 8px; margin-top: 6px; font-size: 13px; color: var(--text); }
+.formula.plain { font-family: ui-monospace, Menlo, monospace; }
+.fraction { display: inline-flex; flex-direction: column; align-items: center; text-align: center; }
+.numerator { padding: 0 6px 3px; border-bottom: 1.5px solid currentColor; }
+.denominator { padding: 3px 6px 0; }
+.scale { font-weight: 600; white-space: nowrap; }
+.direction { align-self: flex-start; margin-top: 6px; padding: 2px 8px; border-radius: 999px; font-size: 12px; font-weight: 700; }
+.direction.up { background: #e7f6ee; color: #0f6b43; }
+.direction.down { background: #fdf1e6; color: #9a4a00; }
+.formula-table { margin-top: 4px; }
+.formula-table .ft-metric { font-weight: 600; }
+.formula-table td { vertical-align: middle; }
+.formula-table td:last-child, .formula-table td:nth-child(2) { white-space: nowrap; }

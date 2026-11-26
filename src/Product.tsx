@@ -154,27 +154,109 @@ export function Journey({ section, onStar, onLevel }: { section: Section; onStar
   )
 }
 
-function MetricItem({ point }: { point: Point }) {
+// "a / b × 1000" -> a over b, then "× 1000". No "/" -> the text as typed.
+function splitFormula(formula: string): { top: string; bottom: string; scale: string } | null {
+  const scaled = /^(.*?)\s*[×x*]\s*([\d,.]+\s*[kKmM]?)$/.exec(formula)
+  const body = scaled ? scaled[1] : formula
+  const slash = body.indexOf('/')
+  if (slash === -1) return null
+  const top = body.slice(0, slash).trim().replace(/^\((.*)\)$/, '$1')
+  const bottom = body.slice(slash + 1).trim().replace(/^\((.*)\)$/, '$1')
+  if (!top || !bottom) return null
+  return { top, bottom, scale: scaled ? scaled[2] : '' }
+}
+
+export function Formula({ formula }: { formula: string }) {
+  const parts = splitFormula(formula)
+  if (!parts) return <span className="formula plain">{formula}</span>
   return (
-    <li>
-      <span className="metric-text">{point.text}</span>
-      {point.details.length > 0 && <span className="metric-desc">{point.details.join(' · ')}</span>}
-    </li>
+    <span className="formula" aria-label={formula}>
+      <span className="fraction">
+        <span className="numerator">{parts.top}</span>
+        <span className="denominator">{parts.bottom}</span>
+      </span>
+      {parts.scale && <span className="scale">× {parts.scale}</span>}
+    </span>
   )
 }
 
-// Metrics as one panel: the north star on top, supporting metrics and guardrails side by side.
+function Direction({ direction }: { direction: Point['direction'] }) {
+  if (!direction) return null
+  return (
+    <span className={`direction ${direction}`} title={direction === 'up' ? 'Higher is better' : 'Lower is better'}>
+      {direction === 'up' ? '↑ Higher is better' : '↓ Lower is better'}
+    </span>
+  )
+}
+
+function kickerOf(point: Point): string {
+  if (point.category) return point.category
+  if (point.group === 'north') return 'North star metric'
+  if (point.group === 'guardrail') return 'Guardrail'
+  if (point.group === 'supporting') return 'Supporting metric'
+  return ''
+}
+
+// One metric in its own box: type on top, the metric, the question it answers, its formula.
+function MetricCard({ point }: { point: Point }) {
+  const kicker = kickerOf(point)
+  return (
+    <div className={`metric-card ${point.group || 'other'}`}>
+      {kicker && <span className="metric-card-kicker">{kicker}</span>}
+      <span className="metric-card-text">{point.text}</span>
+      {point.details.length > 0 && <span className="metric-desc">{point.details.join(' · ')}</span>}
+      {point.formula && <Formula formula={point.formula} />}
+      <Direction direction={point.direction} />
+    </div>
+  )
+}
+
+// Every metric that has a formula, in one table: what I'd say when asked "how exactly do you measure it?"
+function FormulaTable({ points }: { points: Point[] }) {
+  const rows = points.filter((p) => p.formula)
+  if (rows.length === 0) return null
+  return (
+    <div className="table-wrap formula-table">
+      <table className="notes-table">
+        <thead>
+          <tr>
+            <th>Metric</th>
+            <th>Type</th>
+            <th>Formula</th>
+            <th>Good if</th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((p) => (
+            <tr key={p.line}>
+              <td className="ft-metric">{p.text}</td>
+              <td>{kickerOf(p)}</td>
+              <td>
+                <Formula formula={p.formula} />
+              </td>
+              <td>{p.direction === 'up' ? '↑ Higher' : p.direction === 'down' ? '↓ Lower' : '–'}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  )
+}
+
+const GROUP_ORDER = { north: 0, supporting: 1, guardrail: 2, '': 3 }
+
+// The metric hierarchy: the primary metric on top, every other metric in its own box below
+// (guardrails last, in red), then the formula table.
 export function MetricsPanel({ section }: { section: Section }) {
   const north = section.points.filter((p) => p.group === 'north')
-  const supporting = section.points.filter((p) => p.group === 'supporting')
-  const guardrails = section.points.filter((p) => p.group === 'guardrail')
-  const other = section.points.filter((p) => p.group === '')
+  const rest = section.points.filter((p) => p.group !== 'north').sort((a, b) => GROUP_ORDER[a.group] - GROUP_ORDER[b.group])
 
   if (section.points.length === 0) {
     return (
       <p className="chain-hint">
-        Under Metrics, type <b>North star</b>, <b>Supporting metrics</b> and <b>Guardrails</b>, each with its metrics
-        indented below.
+        Under Metrics, type <b>Primary:</b> your main metric, then one line per other metric like <b>Adoption:</b>,{' '}
+        <b>Experience:</b> or <b>Guardrail:</b>. Indent <b>F: a / b</b> for its formula and <b>up</b> or <b>down</b> for
+        which way is good.
       </p>
     )
   }
@@ -189,49 +271,22 @@ export function MetricsPanel({ section }: { section: Section }) {
             </svg>
           </span>
           <div className="metric-north-main">
-            <span className="metric-kicker">North star metric</span>
+            <span className="metric-kicker">{kickerOf(p)}</span>
             <span className="metric-north-text">{p.text}</span>
             {p.details.length > 0 && <span className="metric-desc">{p.details.join(' · ')}</span>}
+            {p.formula && <Formula formula={p.formula} />}
+            <Direction direction={p.direction} />
           </div>
         </div>
       ))}
-      {(supporting.length > 0 || guardrails.length > 0) && (
-        <div className="metric-cols">
-          {supporting.length > 0 && (
-            <div className="metric-box supporting">
-              <h3>
-                <span aria-hidden="true">↗</span> Supporting metrics
-              </h3>
-              <ul>
-                {supporting.map((p) => (
-                  <MetricItem key={p.line} point={p} />
-                ))}
-              </ul>
-            </div>
-          )}
-          {guardrails.length > 0 && (
-            <div className="metric-box guardrail">
-              <h3>
-                <span aria-hidden="true">🛡</span> Guardrails
-              </h3>
-              <ul>
-                {guardrails.map((p) => (
-                  <MetricItem key={p.line} point={p} />
-                ))}
-              </ul>
-            </div>
-          )}
+      {rest.length > 0 && (
+        <div className="metric-grid">
+          {rest.map((p) => (
+            <MetricCard key={p.line} point={p} />
+          ))}
         </div>
       )}
-      {other.length > 0 && (
-        <div className="metric-box">
-          <ul>
-            {other.map((p) => (
-              <MetricItem key={p.line} point={p} />
-            ))}
-          </ul>
-        </div>
-      )}
+      <FormulaTable points={[...north, ...rest]} />
     </div>
   )
 }

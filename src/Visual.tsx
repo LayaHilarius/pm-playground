@@ -232,6 +232,7 @@ export function StepBar({ steps }: { steps: Step[] }) {
 const EXAMPLES: Record<string, string> = {
   guesstimate: `Clarify\nNew cars only, or used too?\n-> New only\n--end--\n\nStructure\nClarify\nChain\nSegment\n--end--`,
   'product-sense': `Structure\nClarify\nGoal\nUsers\nUser journey\nPain points\nSolutions\nMetrics\n--end--\n\nUser journey\nSearch destination\n  Too many results\n    high\nFollow directions *\n  Lost at junctions\n    very high`,
+  metrics: `Structure\nClarify\nGoal\nKey actions\nMetric hierarchy\nPitfalls\nSummary\n--end--\n\nMetric hierarchy\nPrimary: 60-day repeat transfer rate\n  F: customers who transfer again in 60 days / customers who made a transfer\n  up\nAdoption: Tracking view rate\n  F: transfers with tracking opened / all transfers\nGuardrail: Transfer failure rate\n  F: failed transfers / all transfers\n  down`,
   'root-cause': `Clarify\nHow is a navigation start counted?\n-> Tapping Start on a route\nSudden or gradual?\n-> Sudden, from last Tuesday\n--end--\n\nStructure\nClarify\nActivation funnel\nInternal factors\nExternal factors\nHypotheses\nConclusion\n--end--\n\nActivation funnel\n--table--\nStep,Before,After\nOpen app,10M,10M\nSearch,6M,5.9M\nSee route,5M,4.9M\nTap Start,4M,2.9M\n--end--`,
 }
 
