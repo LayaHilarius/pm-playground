@@ -193,7 +193,9 @@ export default function App() {
                 placeholder={
                   active.type === 'product-sense'
                     ? 'Clarify\nWhich part of Maps?\n-> Navigation\n--end--'
-                    : active.type === 'root-cause'
+                    : active.type === 'metrics'
+                      ? 'Clarify\nNew feature or mature product?\n-> New feature, launched last month\n--end--'
+                      : active.type === 'root-cause'
                       ? 'Clarify\nHow is the metric counted?\n-> Taps on Start\nSudden or gradual?\n-> Sudden, since Tuesday\n--end--'
                       : 'Clarify\nIs this new cars only?\n-> Yes, new cars only\n--end--'
                 }
@@ -210,6 +212,14 @@ export default function App() {
                     · <b>User journey</b>: a stage per line, indent for its pain points, indent again for friction (
                     <b>low</b>, <b>moderate</b>, <b>high</b>, <b>very high</b>) · indented lines are descriptions ·{' '}
                     <b>P0</b>–<b>P3</b> under Solutions · end a line with <b>*</b> (or click its star) for the north star
+                  </>
+                )}
+                {active.type === 'metrics' && (
+                  <>
+                    {' '}
+                    · under <b>Metric hierarchy</b>: <b>Primary:</b> your main metric, then <b>Adoption:</b>,{' '}
+                    <b>Engagement:</b>, <b>Experience:</b>, <b>Quality:</b>, <b>Business:</b> or <b>Guardrail:</b> one per
+                    line · indent <b>F: a / b</b> for the formula and <b>up</b> / <b>down</b> for which way is good
                   </>
                 )}
                 {active.type === 'root-cause' && (
